@@ -1,7 +1,4 @@
 import subprocess
-import os
-import codecs
-import selectors
 import threading
 import time
 import html
@@ -145,17 +142,6 @@ display(HTML("""
     line-height: 22px;
 }
 
-
-.oc-stream {
-    margin: 18px 14px 8px 14px;
-    color: #d7d7d7;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 14px;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: normal;
-}
 
 .oc-answer {
     margin: 18px 14px 8px 14px;
@@ -393,8 +379,6 @@ def chay_agent(yeu_cau):
     global process_hien_tai
 
     bat_dau = time.time()
-    tra_loi = ""
-    lan_render_cuoi = 0.0
 
     threading.Thread(
         target=hieu_ung_xu_ly,
@@ -403,8 +387,6 @@ def chay_agent(yeu_cau):
     ).start()
 
     try:
-        # Giữ nguyên hành vi mặc định của OpenCode:
-        # không custom agent, không thêm system prompt.
         process_hien_tai = subprocess.Popen(
             [
                 "opencode",
@@ -414,76 +396,25 @@ def chay_agent(yeu_cau):
                 yeu_cau
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=0
+            stderr=subprocess.PIPE,
+            text=True
         )
 
-        decoder = codecs.getincrementaldecoder("utf-8")("replace")
-        selector = selectors.DefaultSelector()
-        selector.register(process_hien_tai.stdout, selectors.EVENT_READ)
-
-        while True:
-            if ngat_event.is_set():
-                return
-
-            events = selector.select(timeout=0.05)
-
-            for key, _ in events:
-                chunk = os.read(key.fileobj.fileno(), 512)
-
-                if chunk:
-                    tra_loi += decoder.decode(chunk)
-
-            hien_tai = time.time()
-
-            # Stream dưới dạng plain text để tránh Markdown reflow/jitter.
-            if tra_loi and hien_tai - lan_render_cuoi >= 0.05:
-                tam = tra_loi.strip()
-
-                lines = tam.splitlines()
-
-                if lines and lines[0].startswith("> build"):
-                    tam = "\n".join(lines[1:]).strip()
-
-                if tam:
-                    noi_dung.value = f"""
-                    <div class="oc-log">
-                        {lich_su_html}
-                        <div class="oc-stream">{html.escape(tam)}</div>
-                    </div>
-                    """
-
-                lan_render_cuoi = hien_tai
-
-            if process_hien_tai.poll() is not None:
-                # Đọc nốt phần còn lại trong pipe.
-                while True:
-                    chunk = os.read(process_hien_tai.stdout.fileno(), 512)
-
-                    if not chunk:
-                        break
-
-                    tra_loi += decoder.decode(chunk)
-
-                tra_loi += decoder.decode(b"", final=True)
-                break
-
-        selector.close()
+        stdout, stderr = process_hien_tai.communicate()
 
         if ngat_event.is_set():
             return
 
-        tra_loi = tra_loi.strip()
+        tra_loi = stdout.strip()
 
         if not tra_loi:
-            tra_loi = "Không nhận được phản hồi."
+            tra_loi = stderr.strip() or "Không nhận được phản hồi."
 
         lines = tra_loi.splitlines()
 
         if lines and lines[0].startswith("> build"):
             tra_loi = "\n".join(lines[1:]).strip()
 
-        # Chỉ render Markdown hoàn chỉnh một lần khi stream kết thúc.
         tra_loi_html = markdown_sang_html(tra_loi)
         thoi_gian = time.time() - bat_dau
 
