@@ -37,7 +37,7 @@ o_nhap = widgets.Textarea(
     continuous_update=True,
     layout=widgets.Layout(
         width="auto",
-        height="52px",
+        height="auto",
         flex="1 1 0",
         min_width="0"
     )
@@ -50,7 +50,7 @@ dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
     layout=widgets.Layout(
         width="20px",
-        height="52px"
+        height="auto"
     )
 )
 
@@ -58,9 +58,9 @@ khung_nhap = widgets.HBox(
     [dau_nhap, o_nhap],
     layout=widgets.Layout(
         width="100%",
-        height="52px",
+        height="auto",
         align_items="stretch",
-        overflow="hidden"
+        overflow="visible"
     )
 )
 
@@ -87,24 +87,22 @@ display(HTML("""
 
 .oc-user-block {
     width: 100% !important;
-    height: 52px !important;
     min-height: 52px !important;
-    max-height: 52px !important;
     background: #3a3939 !important;
     margin: 10px 0 !important;
-    padding: 0 12px !important;
+    padding: 6px 14px !important;
     box-sizing: border-box !important;
     display: flex !important;
-    align-items: stretch !important;
-    overflow: visible;
+    align-items: flex-start !important;
+    overflow: visible !important;
 }
 
 .oc-arrow {
-    height: 52px;
-    display: flex;
-    align-items: flex-start;
+    width: 24px;
+    flex: 0 0 24px;
+    display: block;
     box-sizing: border-box;
-    padding-top: 6px;
+    padding: 0;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
@@ -115,9 +113,7 @@ display(HTML("""
     flex: 1 1 0 !important;
     width: auto !important;
     min-width: 0 !important;
-    height: 52px !important;
-    min-height: 52px !important;
-    max-height: 52px !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -128,14 +124,13 @@ display(HTML("""
 
 .oc-input textarea {
     width: 100% !important;
-    height: 52px !important;
-    min-height: 52px !important;
-    max-height: 52px !important;
+    height: 40px;
+    min-height: 40px !important;
     box-sizing: border-box !important;
     resize: none !important;
-    overflow-y: auto !important;
+    overflow-y: hidden !important;
     margin: 0 !important;
-    padding: 6px 0 !important;
+    padding: 0 !important;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -467,11 +462,11 @@ def gui():
         min-height:52px;
         background:#3a3939;
         margin:10px 0;
-        padding:0 14px;
+        padding:6px 14px;
         box-sizing:border-box;
         display:flex;
-        align-items:center;
-        overflow:hidden;
+        align-items:flex-start;
+        overflow:visible;
     ">
         <span style="
             width:24px;
@@ -479,13 +474,14 @@ def gui():
             color:#999;
             font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
             font-size:14px;
-            line-height:1;
+            line-height:20px;
         ">›</span>
 
         <span style="
             color:#eee;
             font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
             font-size:14px;
+            line-height:20px;
             overflow-wrap:anywhere;
             white-space:pre-wrap;
         ">{safe}</span>
@@ -550,6 +546,14 @@ display(Javascript(r"""
             return;
         }
 
+        const resize = () => {
+            textarea.style.height = '40px';
+            textarea.style.height = Math.max(40, textarea.scrollHeight) + 'px';
+        };
+
+        textarea.addEventListener('input', resize);
+        resize();
+
         if (window.__ocKeyHandler) {
             window.removeEventListener('keydown', window.__ocKeyHandler, true);
         }
@@ -569,6 +573,10 @@ display(Javascript(r"""
                 // Enter thường: không chèn newline, gửi prompt.
                 e.preventDefault();
                 sendBtn.click();
+
+                setTimeout(() => {
+                    textarea.style.height = '40px';
+                }, 80);
                 return;
             }
 
