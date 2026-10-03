@@ -52,7 +52,6 @@ composer_html = widgets.HTML(
             data-placeholder="Nhập yêu cầu...  Enter gửi · Ctrl+Enter xuống dòng"
             spellcheck="false"
         ></div>
-        <button class="oc-send-button" type="button">Gửi</button>
     </div>
     """
 )
@@ -88,8 +87,8 @@ display(HTML("""
 
 .oc-composer-shell {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr) auto;
-    column-gap: 8px;
+    grid-template-columns: 20px minmax(0, 1fr);
+    column-gap: 4px;
     align-items: start;
     min-height: 56px;
     margin: 10px 0;
@@ -129,30 +128,6 @@ display(HTML("""
     content: attr(data-placeholder);
     color: #8d8d8d;
     pointer-events: none;
-}
-
-
-.oc-send-button {
-    align-self: center;
-    height: 34px;
-    margin: -6px 0;
-    padding: 0 14px;
-    border: 1px solid #5a5a5a;
-    border-radius: 6px;
-    background: #4a4a4a;
-    color: #eeeeee;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 13px;
-    line-height: 32px;
-    cursor: pointer;
-}
-
-.oc-send-button:hover {
-    background: #555555;
-}
-
-.oc-send-button:active {
-    background: #424242;
 }
 
 
@@ -543,7 +518,7 @@ display(Javascript(r"""
     const install = () => {
         const editor = document.querySelector('.oc-composer-editor');
         const hiddenInput = document.querySelector('.oc-hidden-input input');
-        const sendBtn = document.querySelector('.oc-send-button');
+        const sendBtn = document.querySelector('.oc-hidden-send button');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
 
         if (!editor || !hiddenInput || !sendBtn || !stopBtn) {
@@ -577,8 +552,7 @@ display(Javascript(r"""
             syncToPython();
 
             setTimeout(() => {
-                const hiddenSendBtn = document.querySelector('.oc-hidden-send button');
-                if (hiddenSendBtn) hiddenSendBtn.click();
+                sendBtn.click();
 
                 setTimeout(() => {
                     editor.innerHTML = '';
@@ -614,8 +588,6 @@ display(Javascript(r"""
             // Enter: gửi.
             sendMessage();
         });
-
-        sendBtn.addEventListener('click', sendMessage);
 
         editor.focus();
     };
