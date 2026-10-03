@@ -4,7 +4,7 @@ import time
 import html
 import markdown
 import ipywidgets as widgets
-from IPython.display import display, HTML
+from IPython.display import display, HTML, Javascript
 from ipyevents import Event
 
 MODEL = "opencode/big-pickle"
@@ -530,12 +530,58 @@ def xu_ly_phim(event):
 
 su_kien_phim = Event(
     source=o_nhap,
-    watched_events=["keydown"]
+    watched_events=["keydown"],
+    prevent_default_action=False
 )
 
 su_kien_phim.on_dom_event(
     xu_ly_phim
 )
+
+
+# ===== CHẶN PHÍM TẮT CỦA NOTEBOOK =====
+# Kaggle/Jupyter có thể bắt Shift+Enter để chạy cell.
+# Chặn Enter bubble ra notebook, nhưng vẫn giữ Shift+Enter để xuống dòng.
+display(Javascript(r"""
+(() => {
+    const attach = () => {
+        const areas = document.querySelectorAll('.oc-input textarea');
+
+        if (!areas.length) {
+            setTimeout(attach, 150);
+            return;
+        }
+
+        areas.forEach((el) => {
+            if (el.dataset.ocKeysReady === '1') return;
+            el.dataset.ocKeysReady = '1';
+
+            el.addEventListener(
+                'keydown',
+                (e) => {
+                    if (e.key === 'Enter') {
+                        // Không để Kaggle/Jupyter nhận Enter hoặc Shift+Enter.
+                        e.stopPropagation();
+
+                        // Enter thường dùng để gửi, không chèn newline.
+                        // Shift+Enter vẫn giữ default để Textarea xuống dòng.
+                        if (!e.shiftKey) {
+                            e.preventDefault();
+                        }
+                    }
+
+                    if (e.key === 'Escape') {
+                        e.stopPropagation();
+                    }
+                },
+                true
+            );
+        });
+    };
+
+    attach();
+})();
+"""))
 
 
 # ===== HEADER =====
