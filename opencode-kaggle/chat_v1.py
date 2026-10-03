@@ -49,9 +49,10 @@ composer_html = widgets.HTML(
             contenteditable="true"
             role="textbox"
             aria-multiline="true"
-            data-placeholder="Nhập yêu cầu...  Ctrl+; để gửi"
+            data-placeholder="Nhập yêu cầu..."
             spellcheck="false"
         ></div>
+        <button class="oc-send-button" type="button">Gửi</button>
     </div>
     """
 )
@@ -87,8 +88,8 @@ display(HTML("""
 
 .oc-composer-shell {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
-    column-gap: 4px;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    column-gap: 8px;
     align-items: start;
     min-height: 56px;
     margin: 10px 0;
@@ -128,6 +129,30 @@ display(HTML("""
     content: attr(data-placeholder);
     color: #8d8d8d;
     pointer-events: none;
+}
+
+
+.oc-send-button {
+    align-self: center;
+    height: 34px;
+    margin: -6px 0;
+    padding: 0 14px;
+    border: 1px solid #5a5a5a;
+    border-radius: 6px;
+    background: #4a4a4a;
+    color: #eeeeee;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 32px;
+    cursor: pointer;
+}
+
+.oc-send-button:hover {
+    background: #555555;
+}
+
+.oc-send-button:active {
+    background: #424242;
 }
 
 
@@ -518,7 +543,7 @@ display(Javascript(r"""
     const install = () => {
         const editor = document.querySelector('.oc-composer-editor');
         const hiddenInput = document.querySelector('.oc-hidden-input input');
-        const sendBtn = document.querySelector('.oc-hidden-send button');
+        const sendBtn = document.querySelector('.oc-send-button');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
 
         if (!editor || !hiddenInput || !sendBtn || !stopBtn) {
@@ -554,27 +579,23 @@ display(Javascript(r"""
                 return;
             }
 
-            // Enter luôn dùng để xuống dòng tự nhiên.
-            // Không chặn Enter/Shift+Enter nữa để tránh xung đột với Kaggle.
+            // Enter dùng để xuống dòng tự nhiên.
+            // Gửi bằng nút để tránh xung đột shortcut của Kaggle/trình duyệt.
+        });
 
-            // Ctrl + ;  -> gửi
-            if (e.ctrlKey && (e.key === ';' || e.code === 'Semicolon')) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
+        sendBtn.addEventListener('click', () => {
+            syncToPython();
 
-                syncToPython();
+            setTimeout(() => {
+                const hiddenSendBtn = document.querySelector('.oc-hidden-send button');
+                if (hiddenSendBtn) hiddenSendBtn.click();
 
                 setTimeout(() => {
-                    sendBtn.click();
-
-                    setTimeout(() => {
-                        editor.innerHTML = '';
-                        syncToPython();
-                        editor.focus();
-                    }, 80);
-                }, 40);
-            }
+                    editor.innerHTML = '';
+                    syncToPython();
+                    editor.focus();
+                }, 80);
+            }, 40);
         });
 
         editor.focus();
