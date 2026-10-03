@@ -6,7 +6,36 @@ import markdown
 import ipywidgets as widgets
 from IPython.display import display, HTML, Javascript
 
-MODEL = "opencode/big-pickle"
+MODEL_MAC_DINH = "opencode/big-pickle"
+
+
+def lay_danh_sach_model():
+    try:
+        ket_qua = subprocess.run(
+            ["opencode", "models"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=20
+        )
+
+        models = [
+            dong.strip()
+            for dong in ket_qua.stdout.splitlines()
+            if "/" in dong and " " not in dong.strip()
+        ]
+
+        # Giữ thứ tự OpenCode trả về nhưng loại trùng.
+        models = list(dict.fromkeys(models))
+
+        if MODEL_MAC_DINH not in models:
+            models.insert(0, MODEL_MAC_DINH)
+
+        return models
+
+    except Exception:
+        return [MODEL_MAC_DINH]
+
 
 lich_su_html = ""
 dang_xu_ly = False
@@ -22,6 +51,24 @@ nut_ngat_an = widgets.Button(
     layout=widgets.Layout(display="none")
 )
 nut_ngat_an.add_class("oc-hidden-interrupt")
+
+# ===== MODEL =====
+
+danh_sach_model = lay_danh_sach_model()
+
+chon_model = widgets.Dropdown(
+    options=danh_sach_model,
+    value=MODEL_MAC_DINH,
+    description="Model",
+    layout=widgets.Layout(
+        width="100%",
+        max_width="560px"
+    ),
+    style={
+        "description_width": "52px"
+    }
+)
+chon_model.add_class("oc-model-select")
 
 # ===== INPUT =====
 
@@ -62,6 +109,19 @@ display(HTML("""
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
+}
+
+.oc-model-select {
+    margin: 2px 0 10px 0 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 13px !important;
+}
+
+.oc-model-select select {
+    background: #262626 !important;
+    color: #d7d7d7 !important;
+    border: 1px solid #3f3f3f !important;
+    border-radius: 5px !important;
 }
 
 .oc-composer-shell,
@@ -399,7 +459,7 @@ def chay_agent(yeu_cau):
                 "opencode",
                 "run",
                 "-m",
-                MODEL,
+                chon_model.value,
                 yeu_cau
             ],
             stdout=subprocess.PIPE,
@@ -535,21 +595,44 @@ o_nhap.observe(
 
 # ===== HEADER =====
 
-display(HTML("""
-<div style="
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    margin-bottom:12px;
-">
-    <span style="color:#777;">&gt;_</span>
-    <span style="margin-left:6px;color:#ddd;">OpenCode</span>
-    <span style="color:#707070;">· big-pickle</span>
-</div>
-"""))
+header = widgets.HTML(
+    value=f"""
+    <div style="
+        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        margin-bottom:8px;
+    ">
+        <span style="color:#777;">&gt;_</span>
+        <span style="margin-left:6px;color:#ddd;">OpenCode</span>
+        <span style="color:#707070;">· {chon_model.value}</span>
+    </div>
+    """
+)
+
+
+def cap_nhat_header(change):
+    header.value = f"""
+    <div style="
+        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        margin-bottom:8px;
+    ">
+        <span style="color:#777;">&gt;_</span>
+        <span style="margin-left:6px;color:#ddd;">OpenCode</span>
+        <span style="color:#707070;">· {change['new']}</span>
+    </div>
+    """
+
+
+chon_model.observe(
+    cap_nhat_header,
+    names="value"
+)
 
 
 # ===== HIỂN THỊ =====
 
 display(nut_ngat_an)
+display(header)
+display(chon_model)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
