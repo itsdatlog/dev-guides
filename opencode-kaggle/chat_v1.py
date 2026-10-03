@@ -4,7 +4,7 @@ import time
 import html
 import markdown
 import ipywidgets as widgets
-from IPython.display import display, HTML
+from IPython.display import display, HTML, Javascript
 
 MODEL = "opencode/big-pickle"
 
@@ -15,6 +15,13 @@ ngat_event = threading.Event()
 
 noi_dung = widgets.HTML(value="")
 trang_thai = widgets.HTML(value="")
+
+# Cầu nối ẩn chỉ dành cho phím Esc.
+nut_ngat_an = widgets.Button(
+    description="interrupt",
+    layout=widgets.Layout(display="none")
+)
+nut_ngat_an.add_class("oc-hidden-interrupt")
 
 # ===== INPUT =====
 
@@ -472,6 +479,37 @@ def gui():
     ).start()
 
 
+# ===== ESC =====
+
+def ngat_agent():
+    global process_hien_tai
+    global dang_xu_ly
+
+    if not dang_xu_ly:
+        return
+
+    ngat_event.set()
+
+    if process_hien_tai is not None:
+        process_hien_tai.terminate()
+
+        try:
+            process_hien_tai.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process_hien_tai.kill()
+
+    dang_xu_ly = False
+
+    trang_thai.value = """
+    <div class="oc-done">
+        Đã ngắt bằng Esc
+    </div>
+    """
+
+
+nut_ngat_an.on_click(lambda _: ngat_agent())
+
+
 # ===== ENTER =====
 
 def khi_commit_input(change):
@@ -511,6 +549,36 @@ display(HTML("""
 
 # ===== HIỂN THỊ =====
 
+display(nut_ngat_an)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
+
+# Chỉ bắt Esc trên input. Enter vẫn hoàn toàn do widgets.Text xử lý native.
+display(Javascript(r"""
+(() => {
+    const install = () => {
+        const input = document.querySelector('.oc-native-input input');
+        const stopBtn = document.querySelector('.oc-hidden-interrupt button');
+
+        if (!input || !stopBtn) {
+            setTimeout(install, 100);
+            return;
+        }
+
+        if (input.dataset.ocEscInstalled === '1') return;
+        input.dataset.ocEscInstalled = '1';
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            stopBtn.click();
+        }, true);
+    };
+
+    install();
+})();
+"""))
