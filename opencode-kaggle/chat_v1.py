@@ -24,7 +24,7 @@ o_nhap = widgets.Textarea(
     continuous_update=True,
     layout=widgets.Layout(
         width="auto",
-        height="64px",
+        height="52px",
         flex="1 1 0",
         min_width="0"
     )
@@ -37,7 +37,7 @@ dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
     layout=widgets.Layout(
         width="24px",
-        height="64px"
+        height="52px"
     )
 )
 
@@ -45,7 +45,7 @@ khung_nhap = widgets.HBox(
     [dau_nhap, o_nhap],
     layout=widgets.Layout(
         width="100%",
-        height="64px",
+        height="52px",
         align_items="flex-start",
         overflow="hidden"
     )
@@ -74,7 +74,7 @@ display(HTML("""
 
 .oc-user-block {
     width: 100% !important;
-    min-height: 64px !important;
+    min-height: 52px !important;
     background: #3a3939 !important;
     margin: 10px 0 !important;
     padding: 0 14px !important;
@@ -85,10 +85,10 @@ display(HTML("""
 }
 
 .oc-arrow {
-    height: 64px;
+    height: 52px;
     display: flex;
     align-items: flex-start;
-    padding-top: 13px;
+    padding-top: 12px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
@@ -99,7 +99,7 @@ display(HTML("""
     flex: 1 1 0 !important;
     width: auto !important;
     min-width: 0 !important;
-    height: 64px !important;
+    height: 52px !important;
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -110,11 +110,12 @@ display(HTML("""
 
 .oc-input textarea {
     width: 100% !important;
-    height: 64px !important;
-    min-height: 64px !important;
+    height: 52px !important;
+    min-height: 52px !important;
     resize: none !important;
+    overflow-y: auto !important;
     margin: 0 !important;
-    padding: 10px 0 !important;
+    padding: 6px 0 !important;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -438,10 +439,6 @@ def gui():
 
     o_nhap.value = ""
 
-    # Reset ô nhập về đúng chiều cao mặc định sau mỗi lần gửi.
-    o_nhap.layout.height = "64px"
-    o_nhap.layout.min_height = "64px"
-
     safe = html.escape(yeu_cau)
 
     lich_su_html += f"""
@@ -515,10 +512,12 @@ def ngat_agent():
     """
 
 
-# Enter được ipyevents giữ lại, không chuyển tiếp cho Kaggle.
-# - Enter: gửi
-# - Shift + Enter: chèn xuống dòng
-# - Esc: ngắt
+# Dùng keyup để Textarea cập nhật giá trị trước khi Python xử lý.
+# ipyevents giữ keyboard event ở widget nên Kaggle không nhận phím tắt.
+#
+# Enter         -> gửi
+# Shift + Enter -> xuống dòng bình thường
+# Esc           -> ngắt tiến trình
 def xu_ly_phim(event):
     key = event.get("key", "")
     shift = bool(event.get("shiftKey", False))
@@ -527,23 +526,13 @@ def xu_ly_phim(event):
         ngat_agent()
         return
 
-    if key != "Enter":
-        return
-
-    if shift:
-        # Default Enter đã bị chặn nên tự thêm newline.
-        # continuous_update=True đảm bảo nội dung hiện tại đã đồng bộ về Python.
-        o_nhap.value = o_nhap.value + "\n"
-        return
-
-    # Chờ rất ngắn để ký tự cuối cùng đồng bộ trước khi gửi.
-    threading.Timer(0.03, gui).start()
+    if key == "Enter" and not shift:
+        gui()
 
 
 su_kien_phim = Event(
     source=o_nhap,
-    watched_events=["keydown"],
-    prevent_default_action=True
+    watched_events=["keyup"]
 )
 
 su_kien_phim.on_dom_event(
