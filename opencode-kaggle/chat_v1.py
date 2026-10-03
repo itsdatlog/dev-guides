@@ -2,6 +2,7 @@ import subprocess
 import threading
 import time
 import html
+import json
 import markdown
 import ipywidgets as widgets
 from IPython.display import display, HTML, Javascript
@@ -32,26 +33,26 @@ nut_ngat_an.add_class("oc-hidden-interrupt")
 
 # ===== INPUT =====
 
-o_nhap = widgets.Textarea(
-    placeholder="Nhập yêu cầu...",
-    continuous_update=True,
-    layout=widgets.Layout(
-        width="100%",
-        height="auto",
-        min_width="0"
-    )
+# Cầu nối dữ liệu từ HTML/JavaScript -> Python.
+bridge_input = widgets.Text(
+    value="",
+    layout=widgets.Layout(display="none")
 )
-o_nhap.add_class("oc-input")
+bridge_input.add_class("oc-hidden-input")
 
-khung_nhap = widgets.Box(
-    [o_nhap],
-    layout=widgets.Layout(
-        width="100%",
-        height="auto",
-        overflow="visible"
-    )
+composer_html = widgets.HTML(
+    value=r"""
+    <div class="oc-composer-shell">
+        <div class="oc-composer-prompt">›</div>
+        <textarea
+            class="oc-composer-textarea"
+            rows="1"
+            placeholder="Nhập yêu cầu..."
+            spellcheck="false"
+        ></textarea>
+    </div>
+    """
 )
-khung_nhap.add_class("oc-composer")
 
 
 # ===== CSS =====
@@ -72,19 +73,69 @@ display(HTML("""
     box-sizing: border-box;
 }
 
-.oc-composer,
+.oc-composer-shell,
 .oc-message {
-    position: relative !important;
-    width: 100% !important;
-    min-height: 56px !important;
-    margin: 10px 0 !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-    background: #3a3939 !important;
-    overflow: visible !important;
+    width: 100%;
+    box-sizing: border-box;
+    background: #3a3939;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 22px;
 }
 
-.oc-composer::before,
+.oc-composer-shell {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    column-gap: 4px;
+    align-items: start;
+    min-height: 56px;
+    margin: 10px 0;
+    padding: 17px 16px;
+}
+
+.oc-composer-prompt {
+    color: #999;
+    line-height: 22px;
+    user-select: none;
+}
+
+.oc-composer-textarea {
+    display: block;
+    width: 100%;
+    min-height: 22px;
+    max-height: 154px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    resize: none;
+    overflow-y: hidden;
+    background: transparent;
+    color: #eeeeee;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
+    font: inherit;
+    line-height: 22px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+.oc-composer-textarea::placeholder {
+    color: #8d8d8d;
+    opacity: 1;
+}
+
+.oc-message {
+    position: relative;
+    min-height: 56px;
+    margin: 10px 0;
+    padding: 17px 16px 17px 40px;
+    color: #eeeeee;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .oc-message::before {
     content: "›";
     position: absolute;
@@ -92,55 +143,7 @@ display(HTML("""
     top: 17px;
     width: 20px;
     color: #999;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 14px;
     line-height: 22px;
-    pointer-events: none;
-    z-index: 2;
-}
-
-.oc-input {
-    width: 100% !important;
-    min-width: 0 !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.oc-input .widget-label {
-    display: none !important;
-}
-
-.oc-input textarea {
-    display: block !important;
-    width: 100% !important;
-    min-height: 56px !important;
-    height: 56px;
-    max-height: 188px !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-    padding: 17px 16px 17px 40px !important;
-    resize: none !important;
-    overflow-y: hidden;
-    background: transparent !important;
-    color: #eeeeee !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 14px !important;
-    line-height: 22px !important;
-}
-
-.oc-message {
-    padding: 17px 16px 17px 40px !important;
-    color: #eeeeee;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 14px;
-    line-height: 22px;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
 }
 
 
@@ -448,12 +451,12 @@ def gui():
     if dang_xu_ly:
         return
 
-    yeu_cau = o_nhap.value.strip()
+    yeu_cau = bridge_input.value.strip()
 
     if not yeu_cau:
         return
 
-    o_nhap.value = ""
+    bridge_input.value = ""
 
     safe = html.escape(yeu_cau)
 
@@ -501,92 +504,103 @@ def ngat_agent():
     """
 
 
-# JavaScript sẽ click hai nút ẩn này.
 nut_gui_an.on_click(lambda _: gui())
 nut_ngat_an.on_click(lambda _: ngat_agent())
 
 
-# Bắt phím ở cấp window trước khi shortcut Kaggle xử lý.
 display(Javascript(r"""
 (() => {
     const install = () => {
-        const textarea = document.querySelector('.oc-input textarea');
+        const textarea = document.querySelector('.oc-composer-textarea');
+        const hiddenInput = document.querySelector('.oc-hidden-input input');
         const sendBtn = document.querySelector('.oc-hidden-send button');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
 
-        if (!textarea || !sendBtn || !stopBtn) {
+        if (!textarea || !hiddenInput || !sendBtn || !stopBtn) {
             setTimeout(install, 100);
             return;
         }
 
-        const MIN_HEIGHT = 56;
-        const MAX_HEIGHT = 188;
+        const MIN = 22;
+        const MAX = 154;
+
+        const syncToPython = () => {
+            const setter = Object.getOwnPropertyDescriptor(
+                HTMLInputElement.prototype,
+                'value'
+            ).set;
+
+            setter.call(hiddenInput, textarea.value);
+            hiddenInput.dispatchEvent(
+                new Event('input', { bubbles: true })
+            );
+            hiddenInput.dispatchEvent(
+                new Event('change', { bubbles: true })
+            );
+        };
 
         const resize = () => {
-            textarea.style.height = MIN_HEIGHT + 'px';
+            textarea.style.height = MIN + 'px';
 
             const next = Math.min(
-                MAX_HEIGHT,
-                Math.max(MIN_HEIGHT, textarea.scrollHeight)
+                MAX,
+                Math.max(MIN, textarea.scrollHeight)
             );
 
             textarea.style.height = next + 'px';
             textarea.style.overflowY =
-                textarea.scrollHeight > MAX_HEIGHT ? 'auto' : 'hidden';
+                textarea.scrollHeight > MAX ? 'auto' : 'hidden';
         };
 
-        textarea.addEventListener('input', resize);
-        resize();
+        const reset = () => {
+            textarea.value = '';
+            textarea.style.height = MIN + 'px';
+            textarea.style.overflowY = 'hidden';
+            textarea.scrollTop = 0;
+            textarea.focus();
+            syncToPython();
+        };
 
-        textarea.onkeydown = (e) => {
+        textarea.addEventListener('input', () => {
+            resize();
+            syncToPython();
+        });
+
+        textarea.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
+                e.stopPropagation();
                 e.stopImmediatePropagation();
                 stopBtn.click();
-                return false;
-            }
-
-            if (e.key !== 'Enter') {
                 return;
             }
 
-            // Không cho textarea hoặc Kaggle tự xử lý Enter.
-            e.preventDefault();
+            if (e.key !== 'Enter') return;
+
+            // Không cho Kaggle/Jupyter xử lý Enter.
+            e.stopPropagation();
             e.stopImmediatePropagation();
 
             if (e.shiftKey) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const value = textarea.value;
-
-                textarea.value =
-                    value.slice(0, start) +
-                    "\n" +
-                    value.slice(end);
-
-                textarea.selectionStart = start + 1;
-                textarea.selectionEnd = start + 1;
-
-                // Đồng bộ giá trị mới về ipywidgets/Python.
-                textarea.dispatchEvent(
-                    new Event('input', { bubbles: true })
-                );
-
-                resize();
-                return false;
+                // Shift+Enter: cho textarea tự xuống dòng.
+                // Không preventDefault.
+                return;
             }
 
-            // Enter thường: gửi.
-            sendBtn.click();
+            // Enter thường: gửi, không chèn newline.
+            e.preventDefault();
 
+            syncToPython();
+
+            // Cho trait sync hoàn tất trước khi Python đọc bridge_input.
             setTimeout(() => {
-                textarea.style.height = MIN_HEIGHT + 'px';
-                textarea.style.overflowY = 'hidden';
-                textarea.scrollTop = 0;
-            }, 80);
+                sendBtn.click();
+                setTimeout(reset, 60);
+            }, 25);
+        });
 
-            return false;
-        };
+        resize();
+        textarea.focus();
     };
 
     install();
@@ -612,6 +626,7 @@ display(HTML("""
 
 display(nut_gui_an)
 display(nut_ngat_an)
+display(bridge_input)
 display(noi_dung)
 display(trang_thai)
-display(khung_nhap)
+display(composer_html)
