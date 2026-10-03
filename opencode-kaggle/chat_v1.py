@@ -438,6 +438,10 @@ def gui():
 
     o_nhap.value = ""
 
+    # Reset ô nhập về đúng chiều cao mặc định sau mỗi lần gửi.
+    o_nhap.layout.height = "64px"
+    o_nhap.layout.min_height = "64px"
+
     safe = html.escape(yeu_cau)
 
     lich_su_html += f"""
