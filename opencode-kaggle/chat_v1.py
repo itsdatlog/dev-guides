@@ -4,7 +4,7 @@ import time
 import html
 import markdown
 import ipywidgets as widgets
-from IPython.display import display, HTML, Javascript
+from IPython.display import display, HTML
 from ipyevents import Event
 
 MODEL = "opencode/big-pickle"
@@ -24,7 +24,7 @@ o_nhap = widgets.Textarea(
     continuous_update=True,
     layout=widgets.Layout(
         width="auto",
-        height="96px",
+        height="64px",
         flex="1 1 0",
         min_width="0"
     )
@@ -37,7 +37,7 @@ dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
     layout=widgets.Layout(
         width="24px",
-        height="96px"
+        height="64px"
     )
 )
 
@@ -45,7 +45,7 @@ khung_nhap = widgets.HBox(
     [dau_nhap, o_nhap],
     layout=widgets.Layout(
         width="100%",
-        height="96px",
+        height="64px",
         align_items="flex-start",
         overflow="hidden"
     )
@@ -74,7 +74,7 @@ display(HTML("""
 
 .oc-user-block {
     width: 100% !important;
-    min-height: 96px !important;
+    min-height: 64px !important;
     background: #3a3939 !important;
     margin: 10px 0 !important;
     padding: 0 14px !important;
@@ -85,10 +85,10 @@ display(HTML("""
 }
 
 .oc-arrow {
-    height: 96px;
+    height: 64px;
     display: flex;
     align-items: flex-start;
-    padding-top: 15px;
+    padding-top: 13px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
@@ -99,7 +99,7 @@ display(HTML("""
     flex: 1 1 0 !important;
     width: auto !important;
     min-width: 0 !important;
-    height: 96px !important;
+    height: 64px !important;
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -110,11 +110,11 @@ display(HTML("""
 
 .oc-input textarea {
     width: 100% !important;
-    height: 96px !important;
-    min-height: 96px !important;
+    height: 64px !important;
+    min-height: 64px !important;
     resize: none !important;
     margin: 0 !important;
-    padding: 14px 0 !important;
+    padding: 10px 0 !important;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -511,10 +511,10 @@ def ngat_agent():
     """
 
 
-# Textarea:
+# Enter được ipyevents giữ lại, không chuyển tiếp cho Kaggle.
 # - Enter: gửi
-# - Shift + Enter: xuống dòng
-# - Esc: ngắt tiến trình
+# - Shift + Enter: chèn xuống dòng
+# - Esc: ngắt
 def xu_ly_phim(event):
     key = event.get("key", "")
     shift = bool(event.get("shiftKey", False))
@@ -523,65 +523,28 @@ def xu_ly_phim(event):
         ngat_agent()
         return
 
-    if key == "Enter" and not shift:
-        # Đợi một nhịp rất ngắn để Textarea đồng bộ ký tự cuối về Python.
-        threading.Timer(0.05, gui).start()
+    if key != "Enter":
+        return
+
+    if shift:
+        # Default Enter đã bị chặn nên tự thêm newline.
+        # continuous_update=True đảm bảo nội dung hiện tại đã đồng bộ về Python.
+        o_nhap.value = o_nhap.value + "\n"
+        return
+
+    # Chờ rất ngắn để ký tự cuối cùng đồng bộ trước khi gửi.
+    threading.Timer(0.03, gui).start()
 
 
 su_kien_phim = Event(
     source=o_nhap,
     watched_events=["keydown"],
-    prevent_default_action=False
+    prevent_default_action=True
 )
 
 su_kien_phim.on_dom_event(
     xu_ly_phim
 )
-
-
-# ===== CHẶN PHÍM TẮT CỦA NOTEBOOK =====
-# Kaggle/Jupyter có thể bắt Shift+Enter để chạy cell.
-# Chặn Enter bubble ra notebook, nhưng vẫn giữ Shift+Enter để xuống dòng.
-display(Javascript(r"""
-(() => {
-    const attach = () => {
-        const areas = document.querySelectorAll('.oc-input textarea');
-
-        if (!areas.length) {
-            setTimeout(attach, 150);
-            return;
-        }
-
-        areas.forEach((el) => {
-            if (el.dataset.ocKeysReady === '1') return;
-            el.dataset.ocKeysReady = '1';
-
-            el.addEventListener(
-                'keydown',
-                (e) => {
-                    if (e.key === 'Enter') {
-                        // Không để Kaggle/Jupyter nhận Enter hoặc Shift+Enter.
-                        e.stopPropagation();
-
-                        // Enter thường dùng để gửi, không chèn newline.
-                        // Shift+Enter vẫn giữ default để Textarea xuống dòng.
-                        if (!e.shiftKey) {
-                            e.preventDefault();
-                        }
-                    }
-
-                    if (e.key === 'Escape') {
-                        e.stopPropagation();
-                    }
-                },
-                true
-            );
-        });
-    };
-
-    attach();
-})();
-"""))
 
 
 # ===== HEADER =====
