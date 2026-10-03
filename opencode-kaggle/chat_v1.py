@@ -57,74 +57,23 @@ nut_ngat_an.add_class("oc-hidden-interrupt")
 # ===== MODEL =====
 
 danh_sach_model = lay_danh_sach_model()
-
-chon_model = widgets.Dropdown(
-    options=danh_sach_model,
-    value=MODEL_MAC_DINH,
-    description="",
-    layout=widgets.Layout(
-        width="220px",
-        height="28px"
-    )
-)
-chon_model.add_class("oc-model-select")
-
+MODEL_HIEN_TAI = MODEL_MAC_DINH
 
 
 # ===== KAGGLE API =====
 
-kaggle_token = widgets.Password(
-    placeholder="API token",
-    layout=widgets.Layout(width="150px", height="22px")
-)
-kaggle_token.add_class("oc-kaggle-token")
-
-# Action thật được giữ ẩn; UI nhìn thấy chỉ là text.
-nut_ket_noi_kaggle = widgets.Button(
-    description="connect",
-    layout=widgets.Layout(display="none")
-)
-nut_ket_noi_kaggle.add_class("oc-kaggle-connect-hidden")
-
-kaggle_link = widgets.HTML(
-    value='<span class="oc-kaggle-link" title="Kaggle API">K</span>',
-    layout=widgets.Layout(width="auto", height="22px")
+kaggle_da_ket_noi = bool(
+    os.environ.get("KAGGLE_API_TOKEN")
+    or (Path.home() / ".kaggle" / "access_token").exists()
 )
 
-kaggle_submit = widgets.HTML(
-    value='<span class="oc-kaggle-submit" title="Kết nối">↵</span>',
-    layout=widgets.Layout(width="18px", height="22px")
-)
 
-kaggle_form = widgets.HBox(
-    [kaggle_token, kaggle_submit],
-    layout=widgets.Layout(
-        width="auto",
-        height="22px",
-        align_items="center",
-        gap="3px",
-        display="none"
-    )
-)
-kaggle_form.add_class("oc-kaggle-form")
+def ket_noi_kaggle_bang_token(token):
+    global kaggle_da_ket_noi
 
-
-def dat_form_kaggle(mo):
-    kaggle_form.layout.display = "flex" if mo else "none"
-
-
-def dat_trang_thai_kaggle(ok):
-    text = "K✓" if ok else "K"
-    kaggle_link.value = (
-        f'<span class="oc-kaggle-link" title="Kaggle API">{text}</span>'
-    )
-
-
-def ket_noi_kaggle(_):
-    token = kaggle_token.value.strip()
-
+    token = token.strip()
     if not token:
-        return
+        return False, "Thiếu token."
 
     try:
         os.environ["KAGGLE_API_TOKEN"] = token
@@ -144,26 +93,20 @@ def ket_noi_kaggle(_):
             timeout=25
         )
 
-        if test.returncode == 0:
-            kaggle_token.value = ""
-            dat_trang_thai_kaggle(True)
-            dat_form_kaggle(False)
+        kaggle_da_ket_noi = (test.returncode == 0)
+        if kaggle_da_ket_noi:
+            return True, "Kaggle đã kết nối."
 
+        return False, "Đã lưu token nhưng xác thực chưa thành công."
+
+    except FileNotFoundError:
+        return False, "Thiếu kaggle CLI. Chạy lại Cell 1."
     except Exception:
-        pass
-
-
-nut_ket_noi_kaggle.on_click(ket_noi_kaggle)
-
-dat_trang_thai_kaggle(
-    bool(
-        os.environ.get("KAGGLE_API_TOKEN")
-        or (Path.home() / ".kaggle" / "access_token").exists()
-    )
-)
+        return False, "Không thể kết nối Kaggle."
 
 
 # ===== INPUT =====
+
 
 o_nhap = widgets.Text(
     value="",
@@ -202,63 +145,6 @@ display(HTML("""
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
-}
-
-.oc-model-select {
-    margin: 0 !important;
-    padding: 0 !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 13px !important;
-}
-
-.oc-model-select select {
-    height: 28px !important;
-    padding: 0 22px 0 6px !important;
-    background: transparent !important;
-    color: #707070 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    outline: 0 !important;
-    box-shadow: none !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 13px !important;
-    cursor: pointer;
-}
-
-.oc-model-select select:hover {
-    color: #bdbdbd !important;
-}
-
-.oc-kaggle-link,
-.oc-kaggle-submit {
-    display: inline-block;
-    height: 22px;
-    line-height: 22px;
-    padding: 0;
-    color: #707070;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 11px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.oc-kaggle-link:hover,
-.oc-kaggle-submit:hover {
-    color: #d7d7d7;
-}
-
-.oc-kaggle-token input {
-    height: 22px !important;
-    padding: 0 4px !important;
-    background: transparent !important;
-    color: #d7d7d7 !important;
-    border: 0 !important;
-    border-bottom: 1px solid #333 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 11px !important;
 }
 
 .oc-composer-shell,
@@ -575,6 +461,85 @@ def hieu_ung_xu_ly(bat_dau):
         time.sleep(0.08)
 
 
+def hien_thi_he_thong(text):
+    global lich_su_html
+
+    lich_su_html += f"""
+    <div class="oc-answer">
+        {markdown_sang_html(text)}
+    </div>
+    """
+    hien_thi()
+
+
+def cap_nhat_header_model():
+    header.value = f"""
+    <div style="
+        height:26px;
+        display:flex;
+        align-items:center;
+        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        white-space:nowrap;
+    ">
+        <span style="color:#777;">&gt;_</span>
+        <span style="margin-left:6px;color:#ddd;">OpenCode</span>
+        <span style="margin-left:5px;color:#707070;">· {html.escape(MODEL_HIEN_TAI)}</span>
+    </div>
+    """
+
+
+def xu_ly_lenh(yeu_cau):
+    global MODEL_HIEN_TAI
+
+    parts = yeu_cau.strip().split(maxsplit=1)
+    lenh = parts[0].lower()
+    tham_so = parts[1].strip() if len(parts) > 1 else ""
+
+    if lenh == "/help":
+        hien_thi_he_thong(
+            "`/model` — xem model hiện tại và danh sách model  \n"
+            "`/model <tên>` — đổi model  \n"
+            "`/kaggle` — xem trạng thái Kaggle  \n"
+            "`/kaggle <token>` — kết nối Kaggle API"
+        )
+        return True
+
+    if lenh == "/model":
+        if not tham_so:
+            ds = "\n".join(f"- `{m}`" for m in danh_sach_model)
+            hien_thi_he_thong(
+                f"Model hiện tại: `{MODEL_HIEN_TAI}`\n\nModel khả dụng:\n{ds}"
+            )
+            return True
+
+        if tham_so not in danh_sach_model:
+            hien_thi_he_thong(
+                f"Không tìm thấy model `{tham_so}`. Dùng `/model` để xem danh sách."
+            )
+            return True
+
+        MODEL_HIEN_TAI = tham_so
+        cap_nhat_header_model()
+        hien_thi_he_thong(f"Đã đổi model sang `{MODEL_HIEN_TAI}`.")
+        return True
+
+    if lenh == "/kaggle":
+        if not tham_so:
+            trang_thai = "đã kết nối" if kaggle_da_ket_noi else "chưa kết nối"
+            hien_thi_he_thong(f"Kaggle: **{trang_thai}**.")
+            return True
+
+        _, thong_bao = ket_noi_kaggle_bang_token(tham_so)
+        hien_thi_he_thong(thong_bao)
+        return True
+
+    if yeu_cau.startswith("/"):
+        hien_thi_he_thong(f"Không có lệnh `{lenh}`. Dùng `/help`.")
+        return True
+
+    return False
+
+
 # ===== CHẠY OPENCODE =====
 
 def chay_agent(yeu_cau):
@@ -596,7 +561,7 @@ def chay_agent(yeu_cau):
                 "opencode",
                 "run",
                 "-m",
-                chon_model.value,
+                MODEL_HIEN_TAI,
                 yeu_cau
             ],
             stdout=subprocess.PIPE,
@@ -657,6 +622,10 @@ def gui():
         return
 
     o_nhap.value = ""
+
+    # Slash command xử lý cục bộ; token Kaggle không được ghi vào lịch sử chat.
+    if xu_ly_lenh(yeu_cau):
+        return
 
     safe = html.escape(yeu_cau)
 
@@ -732,44 +701,13 @@ o_nhap.observe(
 
 # ===== HEADER =====
 
-header_label = widgets.HTML(
-    value="""
-    <div style="
-        height:26px;
-        display:flex;
-        align-items:center;
-        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-        white-space:nowrap;
-    ">
-        <span style="color:#777;">&gt;_</span>
-        <span style="margin-left:6px;color:#ddd;">OpenCode</span>
-        <span style="margin-left:5px;color:#707070;">·</span>
-    </div>
-    """,
-    layout=widgets.Layout(width="auto", height="26px")
-)
-
-header = widgets.HBox(
-    [
-        header_label,
-        chon_model,
-        kaggle_link,
-        kaggle_form
-    ],
-    layout=widgets.Layout(
-        width="100%",
-        height="26px",
-        align_items="center",
-        gap="1px",
-        margin="0 0 6px 0"
-    )
-)
+header = widgets.HTML(value="")
+cap_nhat_header_model()
 
 
 # ===== HIỂN THỊ =====
 
 display(nut_ngat_an)
-display(nut_ket_noi_kaggle)
 display(header)
 display(noi_dung)
 display(trang_thai)
@@ -781,29 +719,10 @@ display(Javascript(r"""
     const install = () => {
         const input = document.querySelector('.oc-native-input input');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
-        const kaggleLink = document.querySelector('.oc-kaggle-link');
-        const kaggleSubmit = document.querySelector('.oc-kaggle-submit');
-        const kaggleForm = document.querySelector('.oc-kaggle-form');
-        const kaggleConnect = document.querySelector('.oc-kaggle-connect-hidden button');
 
-        if (!input || !stopBtn || !kaggleLink || !kaggleSubmit || !kaggleForm || !kaggleConnect) {
+        if (!input || !stopBtn) {
             setTimeout(install, 100);
             return;
-        }
-
-        if (kaggleLink.dataset.ocInstalled !== '1') {
-            kaggleLink.dataset.ocInstalled = '1';
-            kaggleLink.addEventListener('click', () => {
-                const hidden = kaggleForm.style.display === 'none';
-                kaggleForm.style.display = hidden ? 'flex' : 'none';
-            });
-        }
-
-        if (kaggleSubmit.dataset.ocInstalled !== '1') {
-            kaggleSubmit.dataset.ocInstalled = '1';
-            kaggleSubmit.addEventListener('click', () => {
-                kaggleConnect.click();
-            });
         }
 
         if (input.dataset.ocEscInstalled === '1') return;
@@ -811,7 +730,6 @@ display(Javascript(r"""
 
         input.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
-
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
