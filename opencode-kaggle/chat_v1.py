@@ -49,7 +49,7 @@ composer_html = widgets.HTML(
             contenteditable="true"
             role="textbox"
             aria-multiline="true"
-            data-placeholder="Nhập yêu cầu...  Enter gửi · Ctrl+Enter xuống dòng"
+            data-placeholder="Nhập yêu cầu...  Enter để gửi"
             spellcheck="false"
         ></div>
     </div>
@@ -577,13 +577,6 @@ display(Javascript(r"""
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-
-            if (e.ctrlKey) {
-                // Ctrl + Enter: chèn xuống dòng tại vị trí caret.
-                document.execCommand('insertLineBreak');
-                syncToPython();
-                return;
-            }
 
             // Enter: gửi.
             sendMessage();
