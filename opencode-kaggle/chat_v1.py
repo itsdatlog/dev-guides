@@ -562,24 +562,27 @@ display(Javascript(r"""
             }, 40);
         };
 
+        // Enter được xử lý ở beforeinput, ngay trước khi trình duyệt
+        // chèn paragraph/newline vào contenteditable.
+        editor.addEventListener('beforeinput', (e) => {
+            if (
+                e.inputType === 'insertParagraph' ||
+                e.inputType === 'insertLineBreak'
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                sendMessage();
+            }
+        });
+
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 stopBtn.click();
-                return;
             }
-
-            if (e.key !== 'Enter') return;
-
-            // Không cho Kaggle/Jupyter xử lý Enter.
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-
-            // Enter: gửi.
-            sendMessage();
         });
 
         editor.focus();
