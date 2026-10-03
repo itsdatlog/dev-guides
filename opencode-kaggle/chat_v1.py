@@ -21,7 +21,7 @@ trang_thai = widgets.HTML(value="")
 
 o_nhap = widgets.Text(
     placeholder="Nhập yêu cầu...",
-    continuous_update=False,
+    continuous_update=True,
     layout=widgets.Layout(
         width="100%",
         height="52px"
@@ -29,6 +29,16 @@ o_nhap = widgets.Text(
 )
 
 o_nhap.add_class("oc-input")
+
+nut_gui = widgets.Button(
+    description="Send",
+    tooltip="Gửi (Enter)",
+    layout=widgets.Layout(
+        width="72px",
+        height="36px"
+    )
+)
+nut_gui.add_class("oc-send")
 
 dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
@@ -39,7 +49,7 @@ dau_nhap = widgets.HTML(
 )
 
 khung_nhap = widgets.HBox(
-    [dau_nhap, o_nhap],
+    [dau_nhap, o_nhap, nut_gui],
     layout=widgets.Layout(
         width="100%",
         height="52px",
@@ -116,6 +126,27 @@ display(HTML("""
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 14px !important;
     line-height: 52px !important;
+}
+
+.oc-send {
+    margin-left: 10px !important;
+}
+
+.oc-send button {
+    height: 36px !important;
+    min-width: 72px !important;
+    padding: 0 12px !important;
+    border: 1px solid #555 !important;
+    border-radius: 6px !important;
+    background: #2b2b2b !important;
+    color: #e8e8e8 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+}
+
+.oc-send button:hover {
+    background: #353535 !important;
 }
 
 .oc-answer {
@@ -518,6 +549,16 @@ su_kien_phim = Event(
 )
 
 su_kien_phim.on_dom_event(xu_ly_phim)
+
+# Nút Send là phương án dự phòng nếu notebook bỏ sót sự kiện Enter.
+nut_gui.on_click(lambda _: gui())
+
+# ipywidgets Text phát submit sau khi giá trị đã đồng bộ về Python.
+# Đây là cách Enter ổn định hơn trên Kaggle/Jupyter.
+try:
+    o_nhap.on_submit(lambda _: gui())
+except Exception:
+    pass
 
 
 # ===== HEADER =====
