@@ -74,22 +74,22 @@ chon_model.add_class("oc-model-select")
 # ===== KAGGLE API =====
 
 kaggle_token = widgets.Password(
-    placeholder="Kaggle token",
-    layout=widgets.Layout(width="180px", height="26px")
+    placeholder="API token",
+    layout=widgets.Layout(width="160px", height="24px")
 )
 kaggle_token.add_class("oc-kaggle-token")
 
 nut_ket_noi_kaggle = widgets.Button(
     description="↵",
-    tooltip="Kết nối Kaggle",
-    layout=widgets.Layout(width="26px", height="26px")
+    tooltip="Kết nối",
+    layout=widgets.Layout(width="22px", height="24px")
 )
 nut_ket_noi_kaggle.add_class("oc-kaggle-connect")
 
 nut_mo_kaggle = widgets.Button(
-    description="Kaggle",
-    tooltip="Kết nối Kaggle API",
-    layout=widgets.Layout(width="auto", height="26px")
+    description="K",
+    tooltip="Kaggle API",
+    layout=widgets.Layout(width="22px", height="24px")
 )
 nut_mo_kaggle.add_class("oc-kaggle-inline")
 
@@ -97,7 +97,7 @@ kaggle_form = widgets.HBox(
     [kaggle_token, nut_ket_noi_kaggle],
     layout=widgets.Layout(
         width="auto",
-        height="26px",
+        height="24px",
         align_items="center",
         gap="4px",
         display="none"
@@ -114,7 +114,7 @@ def toggle_kaggle(_):
 
 
 def dat_trang_thai_kaggle(ok):
-    nut_mo_kaggle.description = "Kaggle ✓" if ok else "Kaggle"
+    nut_mo_kaggle.description = "K✓" if ok else "K"
 
 
 def ket_noi_kaggle(_):
@@ -229,14 +229,15 @@ display(HTML("""
 
 .oc-kaggle-inline button,
 .oc-kaggle-connect button {
-    height: 26px !important;
-    padding: 0 4px !important;
+    height: 24px !important;
+    min-width: 0 !important;
+    padding: 0 2px !important;
     background: transparent !important;
     color: #707070 !important;
     border: 0 !important;
     box-shadow: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
 }
 
 .oc-kaggle-inline button:hover,
@@ -245,8 +246,8 @@ display(HTML("""
 }
 
 .oc-kaggle-token input {
-    height: 26px !important;
-    padding: 0 6px !important;
+    height: 24px !important;
+    padding: 0 5px !important;
     background: transparent !important;
     color: #d7d7d7 !important;
     border: 0 !important;
@@ -749,10 +750,6 @@ header = widgets.HBox(
     [
         header_label,
         chon_model,
-        widgets.HTML(
-            value='<span style="color:#707070;line-height:26px;">·</span>',
-            layout=widgets.Layout(width="8px", height="26px")
-        ),
         nut_mo_kaggle,
         kaggle_form
     ],
@@ -760,8 +757,8 @@ header = widgets.HBox(
         width="100%",
         height="26px",
         align_items="center",
-        gap="2px",
-        margin="0 0 8px 0"
+        gap="1px",
+        margin="0 0 6px 0"
     )
 )
 
