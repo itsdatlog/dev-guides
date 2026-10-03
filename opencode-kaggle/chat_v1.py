@@ -19,12 +19,12 @@ trang_thai = widgets.HTML(value="")
 
 # ===== INPUT =====
 
-o_nhap = widgets.Text(
-    placeholder="Nhập yêu cầu...",
-    continuous_update=False,
+o_nhap = widgets.Textarea(
+    placeholder="Nhập yêu cầu...  (Shift + Enter để xuống dòng)",
+    continuous_update=True,
     layout=widgets.Layout(
         width="auto",
-        height="52px",
+        height="96px",
         flex="1 1 0",
         min_width="0"
     )
@@ -37,7 +37,7 @@ dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
     layout=widgets.Layout(
         width="24px",
-        height="52px"
+        height="96px"
     )
 )
 
@@ -45,8 +45,8 @@ khung_nhap = widgets.HBox(
     [dau_nhap, o_nhap],
     layout=widgets.Layout(
         width="100%",
-        height="52px",
-        align_items="center",
+        height="96px",
+        align_items="flex-start",
         overflow="hidden"
     )
 )
@@ -74,20 +74,21 @@ display(HTML("""
 
 .oc-user-block {
     width: 100% !important;
-    height: 52px !important;
+    min-height: 96px !important;
     background: #3a3939 !important;
     margin: 10px 0 !important;
     padding: 0 14px !important;
     box-sizing: border-box !important;
     display: flex !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     overflow: visible;
 }
 
 .oc-arrow {
-    height: 52px;
+    height: 96px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    padding-top: 15px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
@@ -98,7 +99,7 @@ display(HTML("""
     flex: 1 1 0 !important;
     width: auto !important;
     min-width: 0 !important;
-    height: 52px !important;
+    height: 96px !important;
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -107,11 +108,13 @@ display(HTML("""
     display: none !important;
 }
 
-.oc-input input {
+.oc-input textarea {
     width: 100% !important;
-    height: 52px !important;
+    height: 96px !important;
+    min-height: 96px !important;
+    resize: none !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 14px 0 !important;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -120,7 +123,7 @@ display(HTML("""
     outline: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 14px !important;
-    line-height: 52px !important;
+    line-height: 1.55 !important;
 }
 
 
@@ -440,7 +443,7 @@ def gui():
     lich_su_html += f"""
     <div style="
         width:100%;
-        height:52px;
+        min-height:52px;
         background:#3a3939;
         margin:10px 0;
         padding:0 14px;
@@ -462,9 +465,8 @@ def gui():
             color:#eee;
             font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
             font-size:14px;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            white-space:nowrap;
+            overflow-wrap:anywhere;
+            white-space:pre-wrap;
         ">{safe}</span>
     </div>
     """
@@ -509,37 +511,30 @@ def ngat_agent():
     """
 
 
-# Với continuous_update=False, Text chỉ đồng bộ giá trị về Python
-# khi người dùng nhấn Enter hoặc rời khỏi ô nhập.
-# Vì vậy observe(value) hoạt động như submit trên Kaggle/Jupyter.
-def khi_gui(change):
-    gia_tri_moi = (change.get("new") or "").strip()
+# Textarea:
+# - Enter: gửi
+# - Shift + Enter: xuống dòng
+# - Esc: ngắt tiến trình
+def xu_ly_phim(event):
+    key = event.get("key", "")
+    shift = bool(event.get("shiftKey", False))
 
-    if not gia_tri_moi:
+    if key == "Escape":
+        ngat_agent()
         return
 
-    gui()
+    if key == "Enter" and not shift:
+        # Đợi một nhịp rất ngắn để Textarea đồng bộ ký tự cuối về Python.
+        threading.Timer(0.05, gui).start()
 
 
-o_nhap.observe(
-    khi_gui,
-    names="value"
-)
-
-
-# Esc vẫn bắt trực tiếp bằng sự kiện bàn phím.
-def xu_ly_escape(event):
-    if event.get("key", "") == "Escape":
-        ngat_agent()
-
-
-su_kien_escape = Event(
+su_kien_phim = Event(
     source=o_nhap,
     watched_events=["keydown"]
 )
 
-su_kien_escape.on_dom_event(
-    xu_ly_escape
+su_kien_phim.on_dom_event(
+    xu_ly_phim
 )
 
 
