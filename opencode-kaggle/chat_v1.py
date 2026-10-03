@@ -49,7 +49,7 @@ composer_html = widgets.HTML(
             contenteditable="true"
             role="textbox"
             aria-multiline="true"
-            data-placeholder="Nhập yêu cầu..."
+            data-placeholder="Nhập yêu cầu...  Enter gửi · Ctrl+Enter xuống dòng"
             spellcheck="false"
         ></div>
         <button class="oc-send-button" type="button">Gửi</button>
@@ -570,20 +570,10 @@ display(Javascript(r"""
             syncToPython();
         });
 
-        editor.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                stopBtn.click();
-                return;
-            }
+        const sendMessage = () => {
+            const text = editor.innerText.replace(/\r/g, '').trim();
+            if (!text) return;
 
-            // Enter dùng để xuống dòng tự nhiên.
-            // Gửi bằng nút để tránh xung đột shortcut của Kaggle/trình duyệt.
-        });
-
-        sendBtn.addEventListener('click', () => {
             syncToPython();
 
             setTimeout(() => {
@@ -596,7 +586,36 @@ display(Javascript(r"""
                     editor.focus();
                 }, 80);
             }, 40);
+        };
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                stopBtn.click();
+                return;
+            }
+
+            if (e.key !== 'Enter') return;
+
+            // Không cho Kaggle/Jupyter xử lý Enter.
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            if (e.ctrlKey) {
+                // Ctrl + Enter: chèn xuống dòng tại vị trí caret.
+                document.execCommand('insertLineBreak');
+                syncToPython();
+                return;
+            }
+
+            // Enter: gửi.
+            sendMessage();
         });
+
+        sendBtn.addEventListener('click', sendMessage);
 
         editor.focus();
     };
