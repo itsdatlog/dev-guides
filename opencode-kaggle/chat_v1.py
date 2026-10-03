@@ -2,10 +2,10 @@ import subprocess
 import threading
 import time
 import html
-import json
+import warnings
 import markdown
 import ipywidgets as widgets
-from IPython.display import display, HTML, Javascript
+from IPython.display import display, HTML
 
 MODEL = "opencode/big-pickle"
 
@@ -17,44 +17,27 @@ ngat_event = threading.Event()
 noi_dung = widgets.HTML(value="")
 trang_thai = widgets.HTML(value="")
 
-# Nút ẩn dùng làm cầu nối từ JavaScript -> Python.
-nut_gui_an = widgets.Button(
-    description="send",
-    layout=widgets.Layout(display="none")
-)
-
-nut_ngat_an = widgets.Button(
-    description="interrupt",
-    layout=widgets.Layout(display="none")
-)
-
-nut_gui_an.add_class("oc-hidden-send")
-nut_ngat_an.add_class("oc-hidden-interrupt")
-
 # ===== INPUT =====
 
-# Cầu nối dữ liệu từ HTML/JavaScript -> Python.
-bridge_input = widgets.Text(
+o_nhap = widgets.Text(
     value="",
-    layout=widgets.Layout(display="none")
+    placeholder="Nhập yêu cầu...  Enter để gửi",
+    continuous_update=True,
+    layout=widgets.Layout(
+        width="100%",
+        height="56px"
+    )
 )
-bridge_input.add_class("oc-hidden-input")
+o_nhap.add_class("oc-native-input")
 
-composer_html = widgets.HTML(
-    value=r"""
-    <div class="oc-composer-shell">
-        <div class="oc-composer-prompt">›</div>
-        <div
-            class="oc-composer-editor"
-            contenteditable="true"
-            role="textbox"
-            aria-multiline="true"
-            data-placeholder="Nhập yêu cầu...  Enter để gửi"
-            spellcheck="false"
-        ></div>
-    </div>
-    """
+khung_nhap = widgets.Box(
+    [o_nhap],
+    layout=widgets.Layout(
+        width="100%",
+        height="56px"
+    )
 )
+khung_nhap.add_class("oc-composer-shell")
 
 
 # ===== CSS =====
@@ -86,50 +69,59 @@ display(HTML("""
 }
 
 .oc-composer-shell {
-    display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
-    column-gap: 4px;
-    align-items: start;
-    min-height: 56px;
-    margin: 10px 0;
-    padding: 17px 16px;
+    position: relative;
+    height: 56px !important;
+    min-height: 56px !important;
+    margin: 10px 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
 }
 
-.oc-composer-prompt {
+.oc-composer-shell::before {
+    content: "›";
+    position: absolute;
+    left: 16px;
+    top: 17px;
+    width: 20px;
     color: #999;
+    font-size: 14px;
     line-height: 22px;
-    user-select: none;
-}
-
-.oc-composer-editor {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    min-height: 22px;
-    max-height: 154px;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
-    background: transparent;
-    color: #eeeeee;
-    border: 0;
-    outline: 0;
-    box-shadow: none;
-    font: inherit;
-    line-height: 22px;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    caret-color: #eeeeee;
-}
-
-.oc-composer-editor:empty::before {
-    content: attr(data-placeholder);
-    color: #8d8d8d;
     pointer-events: none;
+    z-index: 2;
 }
 
+.oc-native-input {
+    width: 100% !important;
+    height: 56px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.oc-native-input .widget-label {
+    display: none !important;
+}
+
+.oc-native-input input {
+    width: 100% !important;
+    height: 56px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 17px 16px 17px 40px !important;
+    background: transparent !important;
+    color: #eeeeee !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 14px !important;
+    line-height: 22px !important;
+}
+
+.oc-native-input input::placeholder {
+    color: #8d8d8d !important;
+    opacity: 1 !important;
+}
 
 .oc-message {
     position: relative;
@@ -456,12 +448,12 @@ def gui():
     if dang_xu_ly:
         return
 
-    yeu_cau = bridge_input.value.strip()
+    yeu_cau = o_nhap.value.strip()
 
     if not yeu_cau:
         return
 
-    bridge_input.value = ""
+    o_nhap.value = ""
 
     safe = html.escape(yeu_cau)
 
@@ -481,116 +473,13 @@ def gui():
     ).start()
 
 
-# ===== PHÍM TẮT =====
+# ===== ENTER =====
 
-def ngat_agent():
-    global process_hien_tai
-    global dang_xu_ly
-
-    if not dang_xu_ly:
-        return
-
-    ngat_event.set()
-
-    if process_hien_tai is not None:
-        process_hien_tai.terminate()
-
-        try:
-            process_hien_tai.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            process_hien_tai.kill()
-
-    dang_xu_ly = False
-
-    trang_thai.value = """
-    <div class="oc-done">
-        Đã ngắt bằng Esc
-    </div>
-    """
-
-
-nut_gui_an.on_click(lambda _: gui())
-nut_ngat_an.on_click(lambda _: ngat_agent())
-
-
-display(Javascript(r"""
-(() => {
-    const install = () => {
-        const editor = document.querySelector('.oc-composer-editor');
-        const hiddenInput = document.querySelector('.oc-hidden-input input');
-        const sendBtn = document.querySelector('.oc-hidden-send button');
-        const stopBtn = document.querySelector('.oc-hidden-interrupt button');
-
-        if (!editor || !hiddenInput || !sendBtn || !stopBtn) {
-            setTimeout(install, 100);
-            return;
-        }
-
-        const syncToPython = () => {
-            const setter = Object.getOwnPropertyDescriptor(
-                HTMLInputElement.prototype,
-                'value'
-            ).set;
-
-            setter.call(hiddenInput, editor.innerText.replace(/\r/g, ''));
-            hiddenInput.dispatchEvent(
-                new Event('input', { bubbles: true })
-            );
-            hiddenInput.dispatchEvent(
-                new Event('change', { bubbles: true })
-            );
-        };
-
-        editor.addEventListener('input', () => {
-            syncToPython();
-        });
-
-        const sendMessage = () => {
-            const text = editor.innerText.replace(/\r/g, '').trim();
-            if (!text) return;
-
-            syncToPython();
-
-            setTimeout(() => {
-                sendBtn.click();
-
-                setTimeout(() => {
-                    editor.innerHTML = '';
-                    syncToPython();
-                    editor.focus();
-                }, 80);
-            }, 40);
-        };
-
-        // Enter được xử lý ở beforeinput, ngay trước khi trình duyệt
-        // chèn paragraph/newline vào contenteditable.
-        editor.addEventListener('beforeinput', (e) => {
-            if (
-                e.inputType === 'insertParagraph' ||
-                e.inputType === 'insertLineBreak'
-            ) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                sendMessage();
-            }
-        });
-
-        editor.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                stopBtn.click();
-            }
-        });
-
-        editor.focus();
-    };
-
-    install();
-})();
-"""))
+# Dùng submit event native của ipywidgets.Text.
+# Text là input một dòng nên Enter không thể tạo newline.
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    o_nhap.on_submit(gui)
 
 
 # ===== HEADER =====
@@ -609,9 +498,6 @@ display(HTML("""
 
 # ===== HIỂN THỊ =====
 
-display(nut_gui_an)
-display(nut_ngat_an)
-display(bridge_input)
 display(noi_dung)
 display(trang_thai)
-display(composer_html)
+display(khung_nhap)
