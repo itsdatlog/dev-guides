@@ -89,7 +89,7 @@ display(HTML("""
     content: "›";
     position: absolute;
     left: 14px;
-    top: 13px;
+    top: 16px;
     width: 18px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -119,7 +119,7 @@ display(HTML("""
     max-height: 172px !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 13px 14px 13px 38px !important;
+    padding: 16px 14px 16px 38px !important;
     resize: none !important;
     overflow-y: hidden;
     background: transparent !important;
@@ -134,7 +134,7 @@ display(HTML("""
 }
 
 .oc-message {
-    padding: 13px 14px 13px 38px !important;
+    padding: 16px 14px 16px 38px !important;
     color: #eeeeee;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
