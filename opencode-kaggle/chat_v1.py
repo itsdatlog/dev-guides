@@ -128,6 +128,11 @@ khung_nhap = widgets.Box(
 )
 khung_nhap.add_class("oc-composer-shell")
 
+menu_lenh = widgets.HTML(
+    value='<div class="oc-command-menu"></div>',
+    layout=widgets.Layout(width="100%")
+)
+
 
 # ===== CSS =====
 
@@ -393,6 +398,39 @@ display(HTML("""
 .oc-time {
     margin-left: 8px;
     color: #69757c;
+}
+
+
+.oc-command-menu {
+    display: none;
+    margin: -6px 0 10px 0;
+    padding: 4px 0;
+    border-top: 1px solid #2f2f2f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+}
+
+.oc-command-item {
+    display: flex;
+    gap: 10px;
+    padding: 5px 8px;
+    cursor: pointer;
+    color: #8a8a8a;
+}
+
+.oc-command-item:hover,
+.oc-command-item.active {
+    background: #242424;
+    color: #d7d7d7;
+}
+
+.oc-command-name {
+    width: 74px;
+    color: #b8b8b8;
+}
+
+.oc-command-desc {
+    color: #666;
 }
 
 </style>
@@ -712,28 +750,97 @@ display(header)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
+display(menu_lenh)
 
-# Chỉ bắt Esc trên input. Enter vẫn hoàn toàn do widgets.Text xử lý native.
+# Bắt Esc và hiển thị slash-command palette trên input. Enter vẫn hoàn toàn do widgets.Text xử lý native.
 display(Javascript(r"""
 (() => {
+    const commands = [
+        {name: '/help', desc: 'xem các lệnh'},
+        {name: '/model', desc: 'xem hoặc đổi model'},
+        {name: '/kaggle', desc: 'kết nối Kaggle API'}
+    ];
+
     const install = () => {
         const input = document.querySelector('.oc-native-input input');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
+        const menu = document.querySelector('.oc-command-menu');
 
-        if (!input || !stopBtn) {
+        if (!input || !stopBtn || !menu) {
             setTimeout(install, 100);
             return;
         }
 
-        if (input.dataset.ocEscInstalled === '1') return;
-        input.dataset.ocEscInstalled = '1';
+        if (input.dataset.ocSlashInstalled === '1') return;
+        input.dataset.ocSlashInstalled = '1';
+
+        const renderMenu = () => {
+            const value = input.value || '';
+
+            if (!value.startsWith('/') || value.includes(' ')) {
+                menu.style.display = 'none';
+                menu.innerHTML = '';
+                return;
+            }
+
+            const query = value.toLowerCase();
+            const matches = commands.filter(cmd =>
+                cmd.name.startsWith(query)
+            );
+
+            if (!matches.length) {
+                menu.style.display = 'none';
+                menu.innerHTML = '';
+                return;
+            }
+
+            menu.innerHTML = matches.map((cmd, i) =>
+                '<div class="oc-command-item' + (i === 0 ? ' active' : '') + '" data-command="' + cmd.name + '">' +
+                    '<span class="oc-command-name">' + cmd.name + '</span>' +
+                    '<span class="oc-command-desc">' + cmd.desc + '</span>' +
+                '</div>'
+            ).join('');
+
+            menu.style.display = 'block';
+
+            menu.querySelectorAll('.oc-command-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    input.value = item.dataset.command + ' ';
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
+                    menu.style.display = 'none';
+                    input.focus();
+                });
+            });
+        };
+
+        input.addEventListener('input', renderMenu);
 
         input.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            stopBtn.click();
+            if (e.key === 'Escape') {
+                if (menu.style.display === 'block') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    menu.style.display = 'none';
+                    return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                stopBtn.click();
+                return;
+            }
+
+            if (e.key === 'Tab' && menu.style.display === 'block') {
+                const active = menu.querySelector('.oc-command-item.active');
+                if (active) {
+                    e.preventDefault();
+                    input.value = active.dataset.command + ' ';
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
+                    menu.style.display = 'none';
+                }
+            }
         }, true);
     };
 
