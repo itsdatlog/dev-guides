@@ -4,8 +4,7 @@ import time
 import html
 import markdown
 import ipywidgets as widgets
-from IPython.display import display, HTML
-from ipyevents import Event
+from IPython.display import display, HTML, Javascript
 
 MODEL = "opencode/big-pickle"
 
@@ -16,6 +15,20 @@ ngat_event = threading.Event()
 
 noi_dung = widgets.HTML(value="")
 trang_thai = widgets.HTML(value="")
+
+# Nút ẩn dùng làm cầu nối từ JavaScript -> Python.
+nut_gui_an = widgets.Button(
+    description="send",
+    layout=widgets.Layout(display="none")
+)
+
+nut_ngat_an = widgets.Button(
+    description="interrupt",
+    layout=widgets.Layout(display="none")
+)
+
+nut_gui_an.add_class("oc-hidden-send")
+nut_ngat_an.add_class("oc-hidden-interrupt")
 
 # ===== INPUT =====
 
@@ -74,7 +87,9 @@ display(HTML("""
 
 .oc-user-block {
     width: 100% !important;
+    height: 52px !important;
     min-height: 52px !important;
+    max-height: 52px !important;
     background: #3a3939 !important;
     margin: 10px 0 !important;
     padding: 0 14px !important;
@@ -87,8 +102,8 @@ display(HTML("""
 .oc-arrow {
     height: 52px;
     display: flex;
-    align-items: flex-start;
-    padding-top: 12px;
+    align-items: center;
+    padding-top: 0;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
@@ -100,6 +115,8 @@ display(HTML("""
     width: auto !important;
     min-width: 0 !important;
     height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -112,10 +129,12 @@ display(HTML("""
     width: 100% !important;
     height: 52px !important;
     min-height: 52px !important;
+    max-height: 52px !important;
+    box-sizing: border-box !important;
     resize: none !important;
     overflow-y: auto !important;
     margin: 0 !important;
-    padding: 6px 0 !important;
+    padding: 8px 0 !important;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -512,32 +531,59 @@ def ngat_agent():
     """
 
 
-# Dùng keyup để Textarea cập nhật giá trị trước khi Python xử lý.
-# ipyevents giữ keyboard event ở widget nên Kaggle không nhận phím tắt.
-#
-# Enter         -> gửi
-# Shift + Enter -> xuống dòng bình thường
-# Esc           -> ngắt tiến trình
-def xu_ly_phim(event):
-    key = event.get("key", "")
-    shift = bool(event.get("shiftKey", False))
-
-    if key == "Escape":
-        ngat_agent()
-        return
-
-    if key == "Enter" and not shift:
-        gui()
+# JavaScript sẽ click hai nút ẩn này.
+nut_gui_an.on_click(lambda _: gui())
+nut_ngat_an.on_click(lambda _: ngat_agent())
 
 
-su_kien_phim = Event(
-    source=o_nhap,
-    watched_events=["keyup"]
-)
+# Bắt phím ở cấp window trước khi shortcut Kaggle xử lý.
+display(Javascript(r"""
+(() => {
+    const install = () => {
+        const textarea = document.querySelector('.oc-input textarea');
+        const sendBtn = document.querySelector('.oc-hidden-send button');
+        const stopBtn = document.querySelector('.oc-hidden-interrupt button');
 
-su_kien_phim.on_dom_event(
-    xu_ly_phim
-)
+        if (!textarea || !sendBtn || !stopBtn) {
+            setTimeout(install, 100);
+            return;
+        }
+
+        if (window.__ocKeyHandler) {
+            window.removeEventListener('keydown', window.__ocKeyHandler, true);
+        }
+
+        window.__ocKeyHandler = (e) => {
+            if (e.target !== textarea) return;
+
+            if (e.key === 'Enter') {
+                // Không cho Kaggle/Jupyter nhận Enter hoặc Shift+Enter.
+                e.stopImmediatePropagation();
+
+                if (e.shiftKey) {
+                    // Giữ hành vi mặc định của textarea: xuống dòng.
+                    return;
+                }
+
+                // Enter thường: không chèn newline, gửi prompt.
+                e.preventDefault();
+                sendBtn.click();
+                return;
+            }
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                stopBtn.click();
+            }
+        };
+
+        window.addEventListener('keydown', window.__ocKeyHandler, true);
+    };
+
+    install();
+})();
+"""))
 
 
 # ===== HEADER =====
@@ -556,6 +602,8 @@ display(HTML("""
 
 # ===== HIỂN THỊ =====
 
+display(nut_gui_an)
+display(nut_ngat_an)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
