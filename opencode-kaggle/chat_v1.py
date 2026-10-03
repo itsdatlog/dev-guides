@@ -75,46 +75,49 @@ chon_model.add_class("oc-model-select")
 
 kaggle_token = widgets.Password(
     placeholder="API token",
-    layout=widgets.Layout(width="160px", height="24px")
+    layout=widgets.Layout(width="150px", height="22px")
 )
 kaggle_token.add_class("oc-kaggle-token")
 
+# Action thật được giữ ẩn; UI nhìn thấy chỉ là text.
 nut_ket_noi_kaggle = widgets.Button(
-    description="↵",
-    tooltip="Kết nối",
-    layout=widgets.Layout(width="22px", height="24px")
+    description="connect",
+    layout=widgets.Layout(display="none")
 )
-nut_ket_noi_kaggle.add_class("oc-kaggle-connect")
+nut_ket_noi_kaggle.add_class("oc-kaggle-connect-hidden")
 
-nut_mo_kaggle = widgets.Button(
-    description="K",
-    tooltip="Kaggle API",
-    layout=widgets.Layout(width="22px", height="24px")
+kaggle_link = widgets.HTML(
+    value='<span class="oc-kaggle-link" title="Kaggle API">K</span>',
+    layout=widgets.Layout(width="auto", height="22px")
 )
-nut_mo_kaggle.add_class("oc-kaggle-inline")
+
+kaggle_submit = widgets.HTML(
+    value='<span class="oc-kaggle-submit" title="Kết nối">↵</span>',
+    layout=widgets.Layout(width="18px", height="22px")
+)
 
 kaggle_form = widgets.HBox(
-    [kaggle_token, nut_ket_noi_kaggle],
+    [kaggle_token, kaggle_submit],
     layout=widgets.Layout(
         width="auto",
-        height="24px",
+        height="22px",
         align_items="center",
-        gap="4px",
+        gap="3px",
         display="none"
     )
 )
+kaggle_form.add_class("oc-kaggle-form")
 
 
 def dat_form_kaggle(mo):
     kaggle_form.layout.display = "flex" if mo else "none"
 
 
-def toggle_kaggle(_):
-    dat_form_kaggle(kaggle_form.layout.display == "none")
-
-
 def dat_trang_thai_kaggle(ok):
-    nut_mo_kaggle.description = "K✓" if ok else "K"
+    text = "K✓" if ok else "K"
+    kaggle_link.value = (
+        f'<span class="oc-kaggle-link" title="Kaggle API">{text}</span>'
+    )
 
 
 def ket_noi_kaggle(_):
@@ -150,7 +153,6 @@ def ket_noi_kaggle(_):
         pass
 
 
-nut_mo_kaggle.on_click(toggle_kaggle)
 nut_ket_noi_kaggle.on_click(ket_noi_kaggle)
 
 dat_trang_thai_kaggle(
@@ -227,35 +229,36 @@ display(HTML("""
     color: #bdbdbd !important;
 }
 
-.oc-kaggle-inline button,
-.oc-kaggle-connect button {
-    height: 24px !important;
-    min-width: 0 !important;
-    padding: 0 2px !important;
-    background: transparent !important;
-    color: #707070 !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 11px !important;
+.oc-kaggle-link,
+.oc-kaggle-submit {
+    display: inline-block;
+    height: 22px;
+    line-height: 22px;
+    padding: 0;
+    color: #707070;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
 }
 
-.oc-kaggle-inline button:hover,
-.oc-kaggle-connect button:hover {
-    color: #d7d7d7 !important;
+.oc-kaggle-link:hover,
+.oc-kaggle-submit:hover {
+    color: #d7d7d7;
 }
 
 .oc-kaggle-token input {
-    height: 24px !important;
-    padding: 0 5px !important;
+    height: 22px !important;
+    padding: 0 4px !important;
     background: transparent !important;
     color: #d7d7d7 !important;
     border: 0 !important;
-    border-bottom: 1px solid #3a3a3a !important;
+    border-bottom: 1px solid #333 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    outline: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
 }
 
 .oc-composer-shell,
@@ -750,7 +753,7 @@ header = widgets.HBox(
     [
         header_label,
         chon_model,
-        nut_mo_kaggle,
+        kaggle_link,
         kaggle_form
     ],
     layout=widgets.Layout(
@@ -766,6 +769,7 @@ header = widgets.HBox(
 # ===== HIỂN THỊ =====
 
 display(nut_ngat_an)
+display(nut_ket_noi_kaggle)
 display(header)
 display(noi_dung)
 display(trang_thai)
@@ -777,10 +781,29 @@ display(Javascript(r"""
     const install = () => {
         const input = document.querySelector('.oc-native-input input');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
+        const kaggleLink = document.querySelector('.oc-kaggle-link');
+        const kaggleSubmit = document.querySelector('.oc-kaggle-submit');
+        const kaggleForm = document.querySelector('.oc-kaggle-form');
+        const kaggleConnect = document.querySelector('.oc-kaggle-connect-hidden button');
 
-        if (!input || !stopBtn) {
+        if (!input || !stopBtn || !kaggleLink || !kaggleSubmit || !kaggleForm || !kaggleConnect) {
             setTimeout(install, 100);
             return;
+        }
+
+        if (kaggleLink.dataset.ocInstalled !== '1') {
+            kaggleLink.dataset.ocInstalled = '1';
+            kaggleLink.addEventListener('click', () => {
+                const hidden = kaggleForm.style.display === 'none';
+                kaggleForm.style.display = hidden ? 'flex' : 'none';
+            });
+        }
+
+        if (kaggleSubmit.dataset.ocInstalled !== '1') {
+            kaggleSubmit.dataset.ocInstalled = '1';
+            kaggleSubmit.addEventListener('click', () => {
+                kaggleConnect.click();
+            });
         }
 
         if (input.dataset.ocEscInstalled === '1') return;
