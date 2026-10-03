@@ -49,7 +49,7 @@ composer_html = widgets.HTML(
             contenteditable="true"
             role="textbox"
             aria-multiline="true"
-            data-placeholder="Nhập yêu cầu...  Ctrl+. để gửi"
+            data-placeholder="Nhập yêu cầu...  Ctrl+; để gửi"
             spellcheck="false"
         ></div>
     </div>
@@ -557,8 +557,8 @@ display(Javascript(r"""
             // Enter luôn dùng để xuống dòng tự nhiên.
             // Không chặn Enter/Shift+Enter nữa để tránh xung đột với Kaggle.
 
-            // Ctrl + .  -> gửi
-            if (e.ctrlKey && e.key === '.') {
+            // Ctrl + ;  -> gửi
+            if (e.ctrlKey && (e.key === ';' || e.code === 'Semicolon')) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
