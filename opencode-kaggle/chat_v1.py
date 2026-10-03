@@ -3,10 +3,38 @@ import threading
 import time
 import html
 import markdown
+from pathlib import Path
 import ipywidgets as widgets
 from IPython.display import display, HTML
 
 MODEL = "opencode/big-pickle"
+AGENT_NAME = "datlog"
+
+# Agent riêng để giảm tool-loop không cần thiết và giữ câu trả lời trực tiếp.
+AGENT_DIR = Path(".opencode/agents")
+AGENT_DIR.mkdir(parents=True, exist_ok=True)
+
+AGENT_FILE = AGENT_DIR / f"{AGENT_NAME}.md"
+AGENT_FILE.write_text(
+    """---
+description: Trợ lý dev nhanh, trực tiếp cho Kaggle/OpenCode
+mode: primary
+steps: 6
+---
+
+Trả lời bằng ngôn ngữ của người dùng.
+
+Ưu tiên tốc độ và câu trả lời trực tiếp.
+- Với câu hỏi đơn giản, kiến thức chung, giải thích khái niệm hoặc hội thoại: trả lời ngay, không dùng tool.
+- Không tự quét codebase, chạy shell, gọi web hay tạo subagent nếu chưa cần.
+- Chỉ dùng read/glob/grep khi câu hỏi thực sự cần đọc file hoặc code.
+- Chỉ dùng shell khi cần chạy, kiểm tra hoặc sửa chương trình.
+- Chỉ dùng web khi người dùng yêu cầu thông tin mới hoặc câu trả lời phụ thuộc dữ liệu hiện tại.
+- Khi được yêu cầu sửa code, thực hiện thay đổi cần thiết rồi tóm tắt ngắn gọn.
+- Không lặp lại đề bài, không giải thích dài nếu người dùng không yêu cầu.
+""",
+    encoding="utf-8"
+)
 
 lich_su_html = ""
 dang_xu_ly = False
@@ -145,7 +173,7 @@ display(HTML("""
 
 .oc-answer {
     margin: 18px 14px 8px 14px;
-    color: #c9ced3;
+    color: #d7d7d7;
     font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 14px;
     line-height: 1.7;
@@ -163,14 +191,14 @@ display(HTML("""
     content: "·";
     position: absolute;
     left: 0;
-    color: #7fa6c9;
+    color: #6f8fa8;
 }
 
 .oc-answer h1,
 .oc-answer h2,
 .oc-answer h3,
 .oc-answer h4 {
-    color: #b8d8f2;
+    color: #9fc5e8;
     font-weight: 500;
     line-height: 1.4;
     margin: 22px 0 9px 0;
@@ -182,7 +210,7 @@ display(HTML("""
 .oc-answer h3 { font-size: 15px; }
 .oc-answer h4 {
     font-size: 14px;
-    color: #9eb8cc;
+    color: #a9bdd0;
 }
 
 .oc-answer ul,
@@ -197,12 +225,12 @@ display(HTML("""
 }
 
 .oc-answer li::marker {
-    color: #7fa6c9;
+    color: #6f8fa8;
 }
 
 .oc-answer code {
-    background: #25211f;
-    color: #e6a56f;
+    background: #2a2725;
+    color: #e0aa79;
     padding: 2px 5px;
     border-radius: 4px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -227,12 +255,12 @@ display(HTML("""
 }
 
 .oc-answer a {
-    color: #8bbce8;
+    color: #76a9dc;
     text-decoration: none;
 }
 
 .oc-answer a:hover {
-    color: #b8d8f2;
+    color: #9fc5e8;
     text-decoration: underline;
 }
 
@@ -240,7 +268,7 @@ display(HTML("""
     margin: 12px 0;
     padding: 6px 0 6px 12px;
     border-left: 3px solid #8a7fa8;
-    color: #b8b0c9;
+    color: #b7afc8;
 }
 
 .oc-answer table {
@@ -253,31 +281,31 @@ display(HTML("""
 .oc-answer th {
     padding: 8px 10px;
     background: #242b31;
-    color: #b7d1e5;
+    color: #a9c4da;
     border-bottom: 1px solid #46525c;
     font-weight: 500;
 }
 
 .oc-answer td {
     padding: 8px 10px;
-    color: #c7ccd1;
+    color: #d2d2d2;
     border-bottom: 1px solid #333;
 }
 
 .oc-answer strong,
 .oc-answer b {
-    color: #e4c47f;
+    color: #dfc48f;
     font-weight: 500;
 }
 
 .oc-answer em,
 .oc-answer i {
-    color: #b7a9c9;
+    color: #b9a9d0;
 }
 
 .oc-done {
     margin: 4px 14px 22px 14px;
-    color: #72818b;
+    color: #6e7d86;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 12px;
 }
@@ -293,16 +321,16 @@ display(HTML("""
 .oc-spinner {
     width: 19px;
     display: inline-block;
-    color: #e0bd75;
+    color: #d5b77a;
 }
 
 .oc-state {
-    color: #d0bd86;
+    color: #c7b37e;
 }
 
 .oc-time {
     margin-left: 8px;
-    color: #6f7c85;
+    color: #69757c;
 }
 
 </style>
@@ -379,6 +407,8 @@ def chay_agent(yeu_cau):
     global process_hien_tai
 
     bat_dau = time.time()
+    tra_loi = ""
+    lan_render_cuoi = 0.0
 
     threading.Thread(
         target=hieu_ung_xu_ly,
@@ -391,24 +421,57 @@ def chay_agent(yeu_cau):
             [
                 "opencode",
                 "run",
+                "--agent",
+                AGENT_NAME,
                 "-m",
                 MODEL,
                 yeu_cau
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
         )
 
-        stdout, stderr = process_hien_tai.communicate()
+        # Đọc output ngay khi OpenCode ghi ra stdout.
+        # Render theo nhịp để tránh cập nhật HTML quá dày.
+        for dong in iter(process_hien_tai.stdout.readline, ""):
+            if ngat_event.is_set():
+                return
+
+            tra_loi += dong
+
+            hien_tai = time.time()
+
+            if hien_tai - lan_render_cuoi >= 0.12:
+                tam = tra_loi.strip()
+
+                lines = tam.splitlines()
+
+                if lines and lines[0].startswith("> build"):
+                    tam = "\n".join(lines[1:]).strip()
+
+                if tam:
+                    noi_dung.value = f"""
+                    <div class="oc-log">
+                        {lich_su_html}
+                        <div class="oc-answer">
+                            {markdown_sang_html(tam)}
+                        </div>
+                    </div>
+                    """
+
+                lan_render_cuoi = hien_tai
+
+        process_hien_tai.wait()
 
         if ngat_event.is_set():
             return
 
-        tra_loi = stdout.strip()
+        tra_loi = tra_loi.strip()
 
         if not tra_loi:
-            tra_loi = stderr.strip() or "Không nhận được phản hồi."
+            tra_loi = "Không nhận được phản hồi."
 
         lines = tra_loi.splitlines()
 
