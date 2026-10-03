@@ -44,12 +44,14 @@ composer_html = widgets.HTML(
     value=r"""
     <div class="oc-composer-shell">
         <div class="oc-composer-prompt">›</div>
-        <textarea
-            class="oc-composer-textarea"
-            rows="1"
-            placeholder="Nhập yêu cầu...  Ctrl+. để gửi"
+        <div
+            class="oc-composer-editor"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            data-placeholder="Nhập yêu cầu...  Ctrl+. để gửi"
             spellcheck="false"
-        ></textarea>
+        ></div>
     </div>
     """
 )
@@ -99,16 +101,16 @@ display(HTML("""
     user-select: none;
 }
 
-.oc-composer-textarea {
+.oc-composer-editor {
     display: block;
     width: 100%;
+    min-width: 0;
     min-height: 22px;
     max-height: 154px;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    resize: none;
-    overflow-y: hidden;
+    overflow-y: auto;
     background: transparent;
     color: #eeeeee;
     border: 0;
@@ -118,13 +120,16 @@ display(HTML("""
     line-height: 22px;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    vertical-align: top;
+    word-break: break-word;
+    caret-color: #eeeeee;
 }
 
-.oc-composer-textarea::placeholder {
+.oc-composer-editor:empty::before {
+    content: attr(data-placeholder);
     color: #8d8d8d;
-    opacity: 1;
+    pointer-events: none;
 }
+
 
 .oc-message {
     position: relative;
@@ -511,18 +516,15 @@ nut_ngat_an.on_click(lambda _: ngat_agent())
 display(Javascript(r"""
 (() => {
     const install = () => {
-        const textarea = document.querySelector('.oc-composer-textarea');
+        const editor = document.querySelector('.oc-composer-editor');
         const hiddenInput = document.querySelector('.oc-hidden-input input');
         const sendBtn = document.querySelector('.oc-hidden-send button');
         const stopBtn = document.querySelector('.oc-hidden-interrupt button');
 
-        if (!textarea || !hiddenInput || !sendBtn || !stopBtn) {
+        if (!editor || !hiddenInput || !sendBtn || !stopBtn) {
             setTimeout(install, 100);
             return;
         }
-
-        const MIN = 22;
-        const MAX = 154;
 
         const syncToPython = () => {
             const setter = Object.getOwnPropertyDescriptor(
@@ -530,7 +532,7 @@ display(Javascript(r"""
                 'value'
             ).set;
 
-            setter.call(hiddenInput, textarea.value);
+            setter.call(hiddenInput, editor.innerText.replace(/\r/g, ''));
             hiddenInput.dispatchEvent(
                 new Event('input', { bubbles: true })
             );
@@ -539,34 +541,11 @@ display(Javascript(r"""
             );
         };
 
-        const resize = () => {
-            textarea.style.height = MIN + 'px';
-
-            const next = Math.min(
-                MAX,
-                Math.max(MIN, textarea.scrollHeight)
-            );
-
-            textarea.style.height = next + 'px';
-            textarea.style.overflowY =
-                textarea.scrollHeight > MAX ? 'auto' : 'hidden';
-        };
-
-        const reset = () => {
-            textarea.value = '';
-            textarea.style.height = MIN + 'px';
-            textarea.style.overflowY = 'hidden';
-            textarea.scrollTop = 0;
-            textarea.focus();
-            syncToPython();
-        };
-
-        textarea.addEventListener('input', () => {
-            resize();
+        editor.addEventListener('input', () => {
             syncToPython();
         });
 
-        textarea.addEventListener('keydown', (e) => {
+        editor.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopPropagation();
@@ -588,13 +567,17 @@ display(Javascript(r"""
 
                 setTimeout(() => {
                     sendBtn.click();
-                    setTimeout(reset, 80);
+
+                    setTimeout(() => {
+                        editor.innerHTML = '';
+                        syncToPython();
+                        editor.focus();
+                    }, 80);
                 }, 40);
             }
         });
 
-        resize();
-        textarea.focus();
+        editor.focus();
     };
 
     install();
