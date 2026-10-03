@@ -76,7 +76,7 @@ display(HTML("""
 .oc-message {
     position: relative !important;
     width: 100% !important;
-    min-height: 52px !important;
+    min-height: 56px !important;
     margin: 10px 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
@@ -88,13 +88,13 @@ display(HTML("""
 .oc-message::before {
     content: "›";
     position: absolute;
-    left: 14px;
-    top: 16px;
-    width: 18px;
+    left: 16px;
+    top: 17px;
+    width: 20px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
-    line-height: 20px;
+    line-height: 22px;
     pointer-events: none;
     z-index: 2;
 }
@@ -114,12 +114,12 @@ display(HTML("""
 .oc-input textarea {
     display: block !important;
     width: 100% !important;
-    min-height: 52px !important;
-    height: 52px;
-    max-height: 172px !important;
+    min-height: 56px !important;
+    height: 56px;
+    max-height: 188px !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 16px 14px 16px 38px !important;
+    padding: 17px 16px 17px 40px !important;
     resize: none !important;
     overflow-y: hidden;
     background: transparent !important;
@@ -130,15 +130,15 @@ display(HTML("""
     outline: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 14px !important;
-    line-height: 20px !important;
+    line-height: 22px !important;
 }
 
 .oc-message {
-    padding: 16px 14px 16px 38px !important;
+    padding: 17px 16px 17px 40px !important;
     color: #eeeeee;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
-    line-height: 20px;
+    line-height: 22px;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
@@ -519,8 +519,8 @@ display(Javascript(r"""
             return;
         }
 
-        const MIN_HEIGHT = 52;
-        const MAX_HEIGHT = 172;
+        const MIN_HEIGHT = 56;
+        const MAX_HEIGHT = 188;
 
         const resize = () => {
             textarea.style.height = MIN_HEIGHT + 'px';
