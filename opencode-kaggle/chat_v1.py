@@ -538,42 +538,55 @@ display(Javascript(r"""
         textarea.addEventListener('input', resize);
         resize();
 
-        if (window.__ocKeyHandler) {
-            window.removeEventListener('keydown', window.__ocKeyHandler, true);
-        }
-
-        window.__ocKeyHandler = (e) => {
-            if (e.target !== textarea) return;
-
-            if (e.key === 'Enter') {
-                // Không cho Kaggle/Jupyter nhận Enter hoặc Shift+Enter.
-                e.stopImmediatePropagation();
-
-                if (e.shiftKey) {
-                    // Giữ hành vi mặc định của textarea: xuống dòng.
-                    return;
-                }
-
-                // Enter thường: không chèn newline, gửi prompt.
-                e.preventDefault();
-                sendBtn.click();
-
-                setTimeout(() => {
-                    textarea.style.height = MIN_HEIGHT + 'px';
-                    textarea.style.overflowY = 'hidden';
-                    textarea.scrollTop = 0;
-                }, 80);
-                return;
-            }
-
+        textarea.onkeydown = (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 stopBtn.click();
+                return false;
             }
-        };
 
-        window.addEventListener('keydown', window.__ocKeyHandler, true);
+            if (e.key !== 'Enter') {
+                return;
+            }
+
+            // Không cho textarea hoặc Kaggle tự xử lý Enter.
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            if (e.shiftKey) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const value = textarea.value;
+
+                textarea.value =
+                    value.slice(0, start) +
+                    "\n" +
+                    value.slice(end);
+
+                textarea.selectionStart = start + 1;
+                textarea.selectionEnd = start + 1;
+
+                // Đồng bộ giá trị mới về ipywidgets/Python.
+                textarea.dispatchEvent(
+                    new Event('input', { bubbles: true })
+                );
+
+                resize();
+                return false;
+            }
+
+            // Enter thường: gửi.
+            sendBtn.click();
+
+            setTimeout(() => {
+                textarea.style.height = MIN_HEIGHT + 'px';
+                textarea.style.overflowY = 'hidden';
+                textarea.scrollTop = 0;
+            }, 80);
+
+            return false;
+        };
     };
 
     install();
