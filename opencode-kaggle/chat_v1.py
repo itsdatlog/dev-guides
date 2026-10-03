@@ -23,8 +23,10 @@ o_nhap = widgets.Text(
     placeholder="Nhập yêu cầu...",
     continuous_update=True,
     layout=widgets.Layout(
-        width="100%",
-        height="52px"
+        width="auto",
+        height="52px",
+        flex="1 1 0",
+        min_width="0"
     )
 )
 
@@ -53,7 +55,8 @@ khung_nhap = widgets.HBox(
     layout=widgets.Layout(
         width="100%",
         height="52px",
-        align_items="center"
+        align_items="center",
+        overflow="visible"
     )
 )
 
@@ -87,7 +90,7 @@ display(HTML("""
     box-sizing: border-box !important;
     display: flex !important;
     align-items: center !important;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .oc-arrow {
@@ -101,8 +104,9 @@ display(HTML("""
 }
 
 .oc-input {
-    flex: 1 1 auto !important;
-    width: 100% !important;
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
     height: 52px !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -543,18 +547,26 @@ def xu_ly_phim(event):
         ngat_agent()
 
 
+# Bắt phím trực tiếp trên ô nhập.
 su_kien_phim = Event(
     source=o_nhap,
-    watched_events=["keydown"]
+    watched_events=["keydown"],
+    prevent_default_action=True
 )
-
 su_kien_phim.on_dom_event(xu_ly_phim)
 
-# Nút Send là phương án dự phòng nếu notebook bỏ sót sự kiện Enter.
+# Bắt thêm ở khung cha vì một số phiên Kaggle không chuyển
+# keydown ổn định từ widget Text sang Python.
+su_kien_khung = Event(
+    source=khung_nhap,
+    watched_events=["keydown"]
+)
+su_kien_khung.on_dom_event(xu_ly_phim)
+
+# Nút Send luôn là phương án dự phòng chắc chắn.
 nut_gui.on_click(lambda _: gui())
 
-# ipywidgets Text phát submit sau khi giá trị đã đồng bộ về Python.
-# Đây là cách Enter ổn định hơn trên Kaggle/Jupyter.
+# Native submit của ipywidgets, dùng thêm nếu môi trường hỗ trợ.
 try:
     o_nhap.on_submit(lambda _: gui())
 except Exception:
