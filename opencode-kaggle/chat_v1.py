@@ -33,7 +33,7 @@ nut_ngat_an.add_class("oc-hidden-interrupt")
 # ===== INPUT =====
 
 o_nhap = widgets.Textarea(
-    placeholder="Nhập yêu cầu...  (Shift + Enter để xuống dòng)",
+    placeholder="Nhập yêu cầu...",
     continuous_update=True,
     layout=widgets.Layout(
         width="auto",
@@ -49,7 +49,7 @@ o_nhap.add_class("oc-input")
 dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
     layout=widgets.Layout(
-        width="24px",
+        width="20px",
         height="52px"
     )
 )
@@ -59,7 +59,7 @@ khung_nhap = widgets.HBox(
     layout=widgets.Layout(
         width="100%",
         height="52px",
-        align_items="flex-start",
+        align_items="stretch",
         overflow="hidden"
     )
 )
@@ -92,22 +92,23 @@ display(HTML("""
     max-height: 52px !important;
     background: #3a3939 !important;
     margin: 10px 0 !important;
-    padding: 0 14px !important;
+    padding: 0 12px !important;
     box-sizing: border-box !important;
     display: flex !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;
     overflow: visible;
 }
 
 .oc-arrow {
     height: 52px;
     display: flex;
-    align-items: center;
-    padding-top: 0;
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding-top: 6px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
-    line-height: 1;
+    line-height: 20px;
 }
 
 .oc-input {
@@ -134,7 +135,7 @@ display(HTML("""
     resize: none !important;
     overflow-y: auto !important;
     margin: 0 !important;
-    padding: 8px 0 !important;
+    padding: 6px 0 !important;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -143,7 +144,7 @@ display(HTML("""
     outline: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 14px !important;
-    line-height: 1.55 !important;
+    line-height: 20px !important;
 }
 
 
