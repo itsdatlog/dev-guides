@@ -36,35 +36,22 @@ o_nhap = widgets.Textarea(
     placeholder="Nhập yêu cầu...",
     continuous_update=True,
     layout=widgets.Layout(
-        width="auto",
+        width="100%",
         height="auto",
-        flex="1 1 0",
         min_width="0"
     )
 )
-
 o_nhap.add_class("oc-input")
 
-
-dau_nhap = widgets.HTML(
-    value='<span class="oc-arrow">›</span>',
-    layout=widgets.Layout(
-        width="20px",
-        height="auto"
-    )
-)
-
-khung_nhap = widgets.HBox(
-    [dau_nhap, o_nhap],
+khung_nhap = widgets.Box(
+    [o_nhap],
     layout=widgets.Layout(
         width="100%",
         height="auto",
-        align_items="stretch",
         overflow="visible"
     )
 )
-
-khung_nhap.add_class("oc-user-block")
+khung_nhap.add_class("oc-composer")
 
 
 # ===== CSS =====
@@ -85,33 +72,35 @@ display(HTML("""
     box-sizing: border-box;
 }
 
-.oc-user-block {
+.oc-composer,
+.oc-message {
+    position: relative !important;
     width: 100% !important;
     min-height: 52px !important;
-    background: #3a3939 !important;
     margin: 10px 0 !important;
-    padding: 6px 14px !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
-    display: flex !important;
-    align-items: flex-start !important;
+    background: #3a3939 !important;
     overflow: visible !important;
 }
 
-.oc-arrow {
-    width: 24px;
-    flex: 0 0 24px;
-    display: block;
-    box-sizing: border-box;
-    padding: 0;
+.oc-composer::before,
+.oc-message::before {
+    content: "›";
+    position: absolute;
+    left: 14px;
+    top: 13px;
+    width: 18px;
     color: #999;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 14px;
     line-height: 20px;
+    pointer-events: none;
+    z-index: 2;
 }
 
 .oc-input {
-    flex: 1 1 0 !important;
-    width: auto !important;
+    width: 100% !important;
     min-width: 0 !important;
     height: auto !important;
     margin: 0 !important;
@@ -123,14 +112,16 @@ display(HTML("""
 }
 
 .oc-input textarea {
+    display: block !important;
     width: 100% !important;
-    height: 40px;
-    min-height: 40px !important;
+    min-height: 52px !important;
+    height: 52px;
+    max-height: 172px !important;
     box-sizing: border-box !important;
-    resize: none !important;
-    overflow-y: hidden !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 13px 14px 13px 38px !important;
+    resize: none !important;
+    overflow-y: hidden;
     background: transparent !important;
     color: #eeeeee !important;
     border: none !important;
@@ -140,6 +131,16 @@ display(HTML("""
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 14px !important;
     line-height: 20px !important;
+}
+
+.oc-message {
+    padding: 13px 14px 13px 38px !important;
+    color: #eeeeee;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 20px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 
@@ -457,35 +458,7 @@ def gui():
     safe = html.escape(yeu_cau)
 
     lich_su_html += f"""
-    <div style="
-        width:100%;
-        min-height:52px;
-        background:#3a3939;
-        margin:10px 0;
-        padding:6px 14px;
-        box-sizing:border-box;
-        display:flex;
-        align-items:flex-start;
-        overflow:visible;
-    ">
-        <span style="
-            width:24px;
-            flex:0 0 24px;
-            color:#999;
-            font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-            font-size:14px;
-            line-height:20px;
-        ">›</span>
-
-        <span style="
-            color:#eee;
-            font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-            font-size:14px;
-            line-height:20px;
-            overflow-wrap:anywhere;
-            white-space:pre-wrap;
-        ">{safe}</span>
-    </div>
+    <div class="oc-message">{safe}</div>
     """
 
     hien_thi()
@@ -546,9 +519,20 @@ display(Javascript(r"""
             return;
         }
 
+        const MIN_HEIGHT = 52;
+        const MAX_HEIGHT = 172;
+
         const resize = () => {
-            textarea.style.height = '40px';
-            textarea.style.height = Math.max(40, textarea.scrollHeight) + 'px';
+            textarea.style.height = MIN_HEIGHT + 'px';
+
+            const next = Math.min(
+                MAX_HEIGHT,
+                Math.max(MIN_HEIGHT, textarea.scrollHeight)
+            );
+
+            textarea.style.height = next + 'px';
+            textarea.style.overflowY =
+                textarea.scrollHeight > MAX_HEIGHT ? 'auto' : 'hidden';
         };
 
         textarea.addEventListener('input', resize);
@@ -575,7 +559,9 @@ display(Javascript(r"""
                 sendBtn.click();
 
                 setTimeout(() => {
-                    textarea.style.height = '40px';
+                    textarea.style.height = MIN_HEIGHT + 'px';
+                    textarea.style.overflowY = 'hidden';
+                    textarea.scrollTop = 0;
                 }, 80);
                 return;
             }
