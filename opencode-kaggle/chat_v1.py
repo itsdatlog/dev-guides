@@ -59,16 +59,15 @@ danh_sach_model = lay_danh_sach_model()
 chon_model = widgets.Dropdown(
     options=danh_sach_model,
     value=MODEL_MAC_DINH,
-    description="Model",
+    description="",
     layout=widgets.Layout(
-        width="100%",
-        max_width="560px"
-    ),
-    style={
-        "description_width": "52px"
-    }
+        width="220px",
+        height="28px"
+    )
 )
 chon_model.add_class("oc-model-select")
+
+
 
 # ===== INPUT =====
 
@@ -112,16 +111,28 @@ display(HTML("""
 }
 
 .oc-model-select {
-    margin: 2px 0 10px 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 13px !important;
 }
 
 .oc-model-select select {
-    background: #262626 !important;
-    color: #d7d7d7 !important;
-    border: 1px solid #3f3f3f !important;
-    border-radius: 5px !important;
+    height: 28px !important;
+    padding: 0 22px 0 6px !important;
+    background: transparent !important;
+    color: #707070 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 13px !important;
+    cursor: pointer;
+}
+
+.oc-model-select select:hover {
+    color: #bdbdbd !important;
 }
 
 .oc-composer-shell,
@@ -595,36 +606,32 @@ o_nhap.observe(
 
 # ===== HEADER =====
 
-header = widgets.HTML(
-    value=f"""
+header_label = widgets.HTML(
+    value="""
     <div style="
+        height:28px;
+        display:flex;
+        align-items:center;
         font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-        margin-bottom:8px;
+        white-space:nowrap;
     ">
         <span style="color:#777;">&gt;_</span>
         <span style="margin-left:6px;color:#ddd;">OpenCode</span>
-        <span style="color:#707070;">· {chon_model.value}</span>
+        <span style="margin-left:5px;color:#707070;">·</span>
     </div>
-    """
+    """,
+    layout=widgets.Layout(width="auto", height="28px")
 )
 
-
-def cap_nhat_header(change):
-    header.value = f"""
-    <div style="
-        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-        margin-bottom:8px;
-    ">
-        <span style="color:#777;">&gt;_</span>
-        <span style="margin-left:6px;color:#ddd;">OpenCode</span>
-        <span style="color:#707070;">· {change['new']}</span>
-    </div>
-    """
-
-
-chon_model.observe(
-    cap_nhat_header,
-    names="value"
+header = widgets.HBox(
+    [header_label, chon_model],
+    layout=widgets.Layout(
+        width="100%",
+        height="28px",
+        align_items="center",
+        gap="2px",
+        margin="0 0 8px 0"
+    )
 )
 
 
@@ -632,7 +639,6 @@ chon_model.observe(
 
 display(nut_ngat_an)
 display(header)
-display(chon_model)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
