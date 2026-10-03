@@ -75,53 +75,77 @@ chon_model.add_class("oc-model-select")
 
 kaggle_token = widgets.Password(
     placeholder="Kaggle API token",
-    layout=widgets.Layout(width="280px", height="30px")
+    layout=widgets.Layout(width="240px", height="28px")
 )
 kaggle_token.add_class("oc-kaggle-token")
 
 nut_ket_noi_kaggle = widgets.Button(
     description="Kết nối",
-    layout=widgets.Layout(width="82px", height="30px"),
-    button_style=""
+    layout=widgets.Layout(width="74px", height="28px")
 )
 nut_ket_noi_kaggle.add_class("oc-kaggle-connect")
 
+nut_mo_kaggle = widgets.Button(
+    description="+",
+    tooltip="Kết nối Kaggle API",
+    layout=widgets.Layout(width="28px", height="28px")
+)
+nut_mo_kaggle.add_class("oc-kaggle-toggle")
+
 trang_thai_kaggle = widgets.HTML(
     value="",
-    layout=widgets.Layout(width="auto", height="30px")
+    layout=widgets.Layout(width="auto", height="28px")
+)
+
+kaggle_form = widgets.HBox(
+    [kaggle_token, nut_ket_noi_kaggle],
+    layout=widgets.Layout(
+        width="auto",
+        height="28px",
+        align_items="center",
+        gap="6px",
+        display="none"
+    )
 )
 
 kaggle_auth = widgets.HBox(
-    [kaggle_token, nut_ket_noi_kaggle, trang_thai_kaggle],
+    [trang_thai_kaggle, nut_mo_kaggle, kaggle_form],
     layout=widgets.Layout(
         width="100%",
-        height="30px",
+        height="28px",
         align_items="center",
-        gap="8px",
-        margin="0 0 8px 0"
+        gap="6px",
+        margin="0 0 6px 0"
     )
 )
 kaggle_auth.add_class("oc-kaggle-auth")
 
 
 def cap_nhat_trang_thai_kaggle(text, ok=False):
-    mau = "#7f9d86" if ok else "#9a8580"
+    mau = "#7f9d86" if ok else "#777"
     trang_thai_kaggle.value = (
         f'<span style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;'
-        f'font-size:12px;color:{mau};">{html.escape(text)}</span>'
+        f'font-size:12px;color:{mau};">Kaggle · {html.escape(text)}</span>'
     )
+
+
+def dat_form_kaggle(mo):
+    kaggle_form.layout.display = "flex" if mo else "none"
+    nut_mo_kaggle.description = "−" if mo else "+"
+
+
+def toggle_kaggle(_):
+    dat_form_kaggle(kaggle_form.layout.display == "none")
 
 
 def ket_noi_kaggle(_):
     token = kaggle_token.value.strip()
 
     if not token:
-        cap_nhat_trang_thai_kaggle("Nhập token trước")
+        cap_nhat_trang_thai_kaggle("nhập token")
         return
 
     try:
-        # Chỉ giữ token trong session hiện tại và file auth cục bộ của Kaggle.
-        # Không in token ra output và không ghi vào repo.
         os.environ["KAGGLE_API_TOKEN"] = token
 
         kaggle_dir = Path.home() / ".kaggle"
@@ -132,7 +156,6 @@ def ket_noi_kaggle(_):
         token_file.write_text(token, encoding="utf-8")
         token_file.chmod(0o600)
 
-        # Xóa khỏi ô nhập ngay sau khi lưu.
         kaggle_token.value = ""
 
         test = subprocess.run(
@@ -152,23 +175,24 @@ def ket_noi_kaggle(_):
         )
 
         if test.returncode == 0:
-            cap_nhat_trang_thai_kaggle("Kaggle ✓", ok=True)
+            cap_nhat_trang_thai_kaggle("✓", ok=True)
+            dat_form_kaggle(False)
         else:
-            cap_nhat_trang_thai_kaggle(
-                "Đã lưu token · xác thực chưa thành công"
-            )
+            cap_nhat_trang_thai_kaggle("xác thực lỗi")
 
     except FileNotFoundError:
-        cap_nhat_trang_thai_kaggle("Thiếu kaggle CLI · chạy lại Cell 1")
+        cap_nhat_trang_thai_kaggle("thiếu CLI")
     except Exception:
-        cap_nhat_trang_thai_kaggle("Không thể lưu/xác thực token")
+        cap_nhat_trang_thai_kaggle("lỗi")
 
 
+nut_mo_kaggle.on_click(toggle_kaggle)
 nut_ket_noi_kaggle.on_click(ket_noi_kaggle)
 
-# Nếu session đã có token thì chỉ báo trạng thái, không hiển thị lại token.
 if os.environ.get("KAGGLE_API_TOKEN") or (Path.home() / ".kaggle" / "access_token").exists():
-    cap_nhat_trang_thai_kaggle("Kaggle token đã có trong session", ok=True)
+    cap_nhat_trang_thai_kaggle("✓", ok=True)
+else:
+    cap_nhat_trang_thai_kaggle("chưa kết nối")
 
 
 # ===== INPUT =====
@@ -242,32 +266,39 @@ display(HTML("""
 }
 
 .oc-kaggle-token input {
-    height: 30px !important;
+    height: 28px !important;
     box-sizing: border-box !important;
-    padding: 0 9px !important;
-    background: #262626 !important;
+    padding: 0 8px !important;
+    background: transparent !important;
     color: #d7d7d7 !important;
-    border: 1px solid #3f3f3f !important;
-    border-radius: 5px !important;
+    border: 1px solid #3a3a3a !important;
+    border-radius: 4px !important;
     box-shadow: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 12px !important;
 }
 
-.oc-kaggle-connect button {
-    height: 30px !important;
-    padding: 0 10px !important;
+.oc-kaggle-connect button,
+.oc-kaggle-toggle button {
+    height: 28px !important;
+    padding: 0 8px !important;
     background: transparent !important;
-    color: #9a9a9a !important;
-    border: 1px solid #3f3f3f !important;
-    border-radius: 5px !important;
+    color: #777 !important;
+    border: 0 !important;
+    border-radius: 4px !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 12px !important;
 }
 
-.oc-kaggle-connect button:hover {
+.oc-kaggle-toggle button {
+    padding: 0 !important;
+    font-size: 15px !important;
+}
+
+.oc-kaggle-connect button:hover,
+.oc-kaggle-toggle button:hover {
     color: #d7d7d7 !important;
-    border-color: #5a5a5a !important;
+    background: #242424 !important;
 }
 
 .oc-composer-shell,
