@@ -21,7 +21,7 @@ trang_thai = widgets.HTML(value="")
 
 o_nhap = widgets.Text(
     placeholder="Nhập yêu cầu...",
-    continuous_update=True,
+    continuous_update=False,
     layout=widgets.Layout(
         width="auto",
         height="52px",
@@ -32,15 +32,6 @@ o_nhap = widgets.Text(
 
 o_nhap.add_class("oc-input")
 
-nut_gui = widgets.Button(
-    description="Send",
-    tooltip="Gửi (Enter)",
-    layout=widgets.Layout(
-        width="72px",
-        height="36px"
-    )
-)
-nut_gui.add_class("oc-send")
 
 dau_nhap = widgets.HTML(
     value='<span class="oc-arrow">›</span>',
@@ -51,12 +42,12 @@ dau_nhap = widgets.HTML(
 )
 
 khung_nhap = widgets.HBox(
-    [dau_nhap, o_nhap, nut_gui],
+    [dau_nhap, o_nhap],
     layout=widgets.Layout(
         width="100%",
         height="52px",
         align_items="center",
-        overflow="visible"
+        overflow="hidden"
     )
 )
 
@@ -132,26 +123,6 @@ display(HTML("""
     line-height: 52px !important;
 }
 
-.oc-send {
-    margin-left: 10px !important;
-}
-
-.oc-send button {
-    height: 36px !important;
-    min-width: 72px !important;
-    padding: 0 12px !important;
-    border: 1px solid #555 !important;
-    border-radius: 6px !important;
-    background: #2b2b2b !important;
-    color: #e8e8e8 !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-    font-size: 12px !important;
-    cursor: pointer !important;
-}
-
-.oc-send button:hover {
-    background: #353535 !important;
-}
 
 .oc-answer {
     margin: 18px 14px 8px 14px;
@@ -538,39 +509,38 @@ def ngat_agent():
     """
 
 
-def xu_ly_phim(event):
-    key = event.get("key", "")
+# Với continuous_update=False, Text chỉ đồng bộ giá trị về Python
+# khi người dùng nhấn Enter hoặc rời khỏi ô nhập.
+# Vì vậy observe(value) hoạt động như submit trên Kaggle/Jupyter.
+def khi_gui(change):
+    gia_tri_moi = (change.get("new") or "").strip()
 
-    if key == "Enter":
-        gui()
-    elif key == "Escape":
+    if not gia_tri_moi:
+        return
+
+    gui()
+
+
+o_nhap.observe(
+    khi_gui,
+    names="value"
+)
+
+
+# Esc vẫn bắt trực tiếp bằng sự kiện bàn phím.
+def xu_ly_escape(event):
+    if event.get("key", "") == "Escape":
         ngat_agent()
 
 
-# Bắt phím trực tiếp trên ô nhập.
-su_kien_phim = Event(
+su_kien_escape = Event(
     source=o_nhap,
-    watched_events=["keydown"],
-    prevent_default_action=True
-)
-su_kien_phim.on_dom_event(xu_ly_phim)
-
-# Bắt thêm ở khung cha vì một số phiên Kaggle không chuyển
-# keydown ổn định từ widget Text sang Python.
-su_kien_khung = Event(
-    source=khung_nhap,
     watched_events=["keydown"]
 )
-su_kien_khung.on_dom_event(xu_ly_phim)
 
-# Nút Send luôn là phương án dự phòng chắc chắn.
-nut_gui.on_click(lambda _: gui())
-
-# Native submit của ipywidgets, dùng thêm nếu môi trường hỗ trợ.
-try:
-    o_nhap.on_submit(lambda _: gui())
-except Exception:
-    pass
+su_kien_escape.on_dom_event(
+    xu_ly_escape
+)
 
 
 # ===== HEADER =====
