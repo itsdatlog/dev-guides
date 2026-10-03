@@ -74,75 +74,53 @@ chon_model.add_class("oc-model-select")
 # ===== KAGGLE API =====
 
 kaggle_token = widgets.Password(
-    placeholder="Kaggle API token",
-    layout=widgets.Layout(width="240px", height="28px")
+    placeholder="Kaggle token",
+    layout=widgets.Layout(width="180px", height="26px")
 )
 kaggle_token.add_class("oc-kaggle-token")
 
 nut_ket_noi_kaggle = widgets.Button(
-    description="Kết nối",
-    layout=widgets.Layout(width="74px", height="28px")
+    description="↵",
+    tooltip="Kết nối Kaggle",
+    layout=widgets.Layout(width="26px", height="26px")
 )
 nut_ket_noi_kaggle.add_class("oc-kaggle-connect")
 
 nut_mo_kaggle = widgets.Button(
-    description="+",
+    description="Kaggle",
     tooltip="Kết nối Kaggle API",
-    layout=widgets.Layout(width="28px", height="28px")
+    layout=widgets.Layout(width="auto", height="26px")
 )
-nut_mo_kaggle.add_class("oc-kaggle-toggle")
-
-trang_thai_kaggle = widgets.HTML(
-    value="",
-    layout=widgets.Layout(width="auto", height="28px")
-)
+nut_mo_kaggle.add_class("oc-kaggle-inline")
 
 kaggle_form = widgets.HBox(
     [kaggle_token, nut_ket_noi_kaggle],
     layout=widgets.Layout(
         width="auto",
-        height="28px",
+        height="26px",
         align_items="center",
-        gap="6px",
+        gap="4px",
         display="none"
     )
 )
 
-kaggle_auth = widgets.HBox(
-    [trang_thai_kaggle, nut_mo_kaggle, kaggle_form],
-    layout=widgets.Layout(
-        width="100%",
-        height="28px",
-        align_items="center",
-        gap="6px",
-        margin="0 0 6px 0"
-    )
-)
-kaggle_auth.add_class("oc-kaggle-auth")
-
-
-def cap_nhat_trang_thai_kaggle(text, ok=False):
-    mau = "#7f9d86" if ok else "#777"
-    trang_thai_kaggle.value = (
-        f'<span style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;'
-        f'font-size:12px;color:{mau};">Kaggle · {html.escape(text)}</span>'
-    )
-
 
 def dat_form_kaggle(mo):
     kaggle_form.layout.display = "flex" if mo else "none"
-    nut_mo_kaggle.description = "−" if mo else "+"
 
 
 def toggle_kaggle(_):
     dat_form_kaggle(kaggle_form.layout.display == "none")
 
 
+def dat_trang_thai_kaggle(ok):
+    nut_mo_kaggle.description = "Kaggle ✓" if ok else "Kaggle"
+
+
 def ket_noi_kaggle(_):
     token = kaggle_token.value.strip()
 
     if not token:
-        cap_nhat_trang_thai_kaggle("nhập token")
         return
 
     try:
@@ -156,43 +134,31 @@ def ket_noi_kaggle(_):
         token_file.write_text(token, encoding="utf-8")
         token_file.chmod(0o600)
 
-        kaggle_token.value = ""
-
         test = subprocess.run(
-            [
-                "kaggle",
-                "competitions",
-                "list",
-                "--group",
-                "entered",
-                "--format",
-                "json"
-            ],
+            ["kaggle", "competitions", "list", "--group", "entered", "--format", "json"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            text=True,
+            stderr=subprocess.DEVNULL,
             timeout=25
         )
 
         if test.returncode == 0:
-            cap_nhat_trang_thai_kaggle("✓", ok=True)
+            kaggle_token.value = ""
+            dat_trang_thai_kaggle(True)
             dat_form_kaggle(False)
-        else:
-            cap_nhat_trang_thai_kaggle("xác thực lỗi")
 
-    except FileNotFoundError:
-        cap_nhat_trang_thai_kaggle("thiếu CLI")
     except Exception:
-        cap_nhat_trang_thai_kaggle("lỗi")
+        pass
 
 
 nut_mo_kaggle.on_click(toggle_kaggle)
 nut_ket_noi_kaggle.on_click(ket_noi_kaggle)
 
-if os.environ.get("KAGGLE_API_TOKEN") or (Path.home() / ".kaggle" / "access_token").exists():
-    cap_nhat_trang_thai_kaggle("✓", ok=True)
-else:
-    cap_nhat_trang_thai_kaggle("chưa kết nối")
+dat_trang_thai_kaggle(
+    bool(
+        os.environ.get("KAGGLE_API_TOKEN")
+        or (Path.home() / ".kaggle" / "access_token").exists()
+    )
+)
 
 
 # ===== INPUT =====
@@ -261,44 +227,34 @@ display(HTML("""
     color: #bdbdbd !important;
 }
 
-.oc-kaggle-auth {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-}
-
-.oc-kaggle-token input {
-    height: 28px !important;
-    box-sizing: border-box !important;
-    padding: 0 8px !important;
+.oc-kaggle-inline button,
+.oc-kaggle-connect button {
+    height: 26px !important;
+    padding: 0 4px !important;
     background: transparent !important;
-    color: #d7d7d7 !important;
-    border: 1px solid #3a3a3a !important;
-    border-radius: 4px !important;
+    color: #707070 !important;
+    border: 0 !important;
     box-shadow: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 12px !important;
 }
 
-.oc-kaggle-connect button,
-.oc-kaggle-toggle button {
-    height: 28px !important;
-    padding: 0 8px !important;
+.oc-kaggle-inline button:hover,
+.oc-kaggle-connect button:hover {
+    color: #d7d7d7 !important;
+}
+
+.oc-kaggle-token input {
+    height: 26px !important;
+    padding: 0 6px !important;
     background: transparent !important;
-    color: #777 !important;
+    color: #d7d7d7 !important;
     border: 0 !important;
-    border-radius: 4px !important;
+    border-bottom: 1px solid #3a3a3a !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
     font-size: 12px !important;
-}
-
-.oc-kaggle-toggle button {
-    padding: 0 !important;
-    font-size: 15px !important;
-}
-
-.oc-kaggle-connect button:hover,
-.oc-kaggle-toggle button:hover {
-    color: #d7d7d7 !important;
-    background: #242424 !important;
 }
 
 .oc-composer-shell,
@@ -775,7 +731,7 @@ o_nhap.observe(
 header_label = widgets.HTML(
     value="""
     <div style="
-        height:28px;
+        height:26px;
         display:flex;
         align-items:center;
         font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -786,14 +742,23 @@ header_label = widgets.HTML(
         <span style="margin-left:5px;color:#707070;">·</span>
     </div>
     """,
-    layout=widgets.Layout(width="auto", height="28px")
+    layout=widgets.Layout(width="auto", height="26px")
 )
 
 header = widgets.HBox(
-    [header_label, chon_model],
+    [
+        header_label,
+        chon_model,
+        widgets.HTML(
+            value='<span style="color:#707070;line-height:26px;">·</span>',
+            layout=widgets.Layout(width="8px", height="26px")
+        ),
+        nut_mo_kaggle,
+        kaggle_form
+    ],
     layout=widgets.Layout(
         width="100%",
-        height="28px",
+        height="26px",
         align_items="center",
         gap="2px",
         margin="0 0 8px 0"
@@ -805,7 +770,6 @@ header = widgets.HBox(
 
 display(nut_ngat_an)
 display(header)
-display(kaggle_auth)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
