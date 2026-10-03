@@ -1,8 +1,10 @@
 import subprocess
+import os
 import threading
 import time
 import html
 import markdown
+from pathlib import Path
 import ipywidgets as widgets
 from IPython.display import display, HTML, Javascript
 
@@ -69,6 +71,106 @@ chon_model.add_class("oc-model-select")
 
 
 
+# ===== KAGGLE API =====
+
+kaggle_token = widgets.Password(
+    placeholder="Kaggle API token",
+    layout=widgets.Layout(width="280px", height="30px")
+)
+kaggle_token.add_class("oc-kaggle-token")
+
+nut_ket_noi_kaggle = widgets.Button(
+    description="Kết nối",
+    layout=widgets.Layout(width="82px", height="30px"),
+    button_style=""
+)
+nut_ket_noi_kaggle.add_class("oc-kaggle-connect")
+
+trang_thai_kaggle = widgets.HTML(
+    value="",
+    layout=widgets.Layout(width="auto", height="30px")
+)
+
+kaggle_auth = widgets.HBox(
+    [kaggle_token, nut_ket_noi_kaggle, trang_thai_kaggle],
+    layout=widgets.Layout(
+        width="100%",
+        height="30px",
+        align_items="center",
+        gap="8px",
+        margin="0 0 8px 0"
+    )
+)
+kaggle_auth.add_class("oc-kaggle-auth")
+
+
+def cap_nhat_trang_thai_kaggle(text, ok=False):
+    mau = "#7f9d86" if ok else "#9a8580"
+    trang_thai_kaggle.value = (
+        f'<span style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;'
+        f'font-size:12px;color:{mau};">{html.escape(text)}</span>'
+    )
+
+
+def ket_noi_kaggle(_):
+    token = kaggle_token.value.strip()
+
+    if not token:
+        cap_nhat_trang_thai_kaggle("Nhập token trước")
+        return
+
+    try:
+        # Chỉ giữ token trong session hiện tại và file auth cục bộ của Kaggle.
+        # Không in token ra output và không ghi vào repo.
+        os.environ["KAGGLE_API_TOKEN"] = token
+
+        kaggle_dir = Path.home() / ".kaggle"
+        kaggle_dir.mkdir(parents=True, exist_ok=True)
+        kaggle_dir.chmod(0o700)
+
+        token_file = kaggle_dir / "access_token"
+        token_file.write_text(token, encoding="utf-8")
+        token_file.chmod(0o600)
+
+        # Xóa khỏi ô nhập ngay sau khi lưu.
+        kaggle_token.value = ""
+
+        test = subprocess.run(
+            [
+                "kaggle",
+                "competitions",
+                "list",
+                "--group",
+                "entered",
+                "--format",
+                "json"
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=25
+        )
+
+        if test.returncode == 0:
+            cap_nhat_trang_thai_kaggle("Kaggle ✓", ok=True)
+        else:
+            cap_nhat_trang_thai_kaggle(
+                "Đã lưu token · xác thực chưa thành công"
+            )
+
+    except FileNotFoundError:
+        cap_nhat_trang_thai_kaggle("Thiếu kaggle CLI · chạy lại Cell 1")
+    except Exception:
+        cap_nhat_trang_thai_kaggle("Không thể lưu/xác thực token")
+
+
+nut_ket_noi_kaggle.on_click(ket_noi_kaggle)
+
+# Nếu session đã có token thì chỉ báo trạng thái, không hiển thị lại token.
+if os.environ.get("KAGGLE_API_TOKEN") or (Path.home() / ".kaggle" / "access_token").exists():
+    cap_nhat_trang_thai_kaggle("Kaggle token đã có trong session", ok=True)
+
+
 # ===== INPUT =====
 
 o_nhap = widgets.Text(
@@ -133,6 +235,39 @@ display(HTML("""
 
 .oc-model-select select:hover {
     color: #bdbdbd !important;
+}
+
+.oc-kaggle-auth {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+}
+
+.oc-kaggle-token input {
+    height: 30px !important;
+    box-sizing: border-box !important;
+    padding: 0 9px !important;
+    background: #262626 !important;
+    color: #d7d7d7 !important;
+    border: 1px solid #3f3f3f !important;
+    border-radius: 5px !important;
+    box-shadow: none !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 12px !important;
+}
+
+.oc-kaggle-connect button {
+    height: 30px !important;
+    padding: 0 10px !important;
+    background: transparent !important;
+    color: #9a9a9a !important;
+    border: 1px solid #3f3f3f !important;
+    border-radius: 5px !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 12px !important;
+}
+
+.oc-kaggle-connect button:hover {
+    color: #d7d7d7 !important;
+    border-color: #5a5a5a !important;
 }
 
 .oc-composer-shell,
@@ -639,6 +774,7 @@ header = widgets.HBox(
 
 display(nut_ngat_an)
 display(header)
+display(kaggle_auth)
 display(noi_dung)
 display(trang_thai)
 display(khung_nhap)
