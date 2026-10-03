@@ -47,7 +47,7 @@ composer_html = widgets.HTML(
         <textarea
             class="oc-composer-textarea"
             rows="1"
-            placeholder="Nhập yêu cầu..."
+            placeholder="Nhập yêu cầu...  Ctrl+. để gửi"
             spellcheck="false"
         ></textarea>
     </div>
@@ -575,28 +575,22 @@ display(Javascript(r"""
                 return;
             }
 
-            if (e.key !== 'Enter') return;
+            // Enter luôn dùng để xuống dòng tự nhiên.
+            // Không chặn Enter/Shift+Enter nữa để tránh xung đột với Kaggle.
 
-            // Không cho Kaggle/Jupyter xử lý Enter.
-            e.stopPropagation();
-            e.stopImmediatePropagation();
+            // Ctrl + .  -> gửi
+            if (e.ctrlKey && e.key === '.') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
 
-            if (e.shiftKey) {
-                // Shift+Enter: cho textarea tự xuống dòng.
-                // Không preventDefault.
-                return;
+                syncToPython();
+
+                setTimeout(() => {
+                    sendBtn.click();
+                    setTimeout(reset, 80);
+                }, 40);
             }
-
-            // Enter thường: gửi, không chèn newline.
-            e.preventDefault();
-
-            syncToPython();
-
-            // Cho trait sync hoàn tất trước khi Python đọc bridge_input.
-            setTimeout(() => {
-                sendBtn.click();
-                setTimeout(reset, 60);
-            }, 25);
         });
 
         resize();
