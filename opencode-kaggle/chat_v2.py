@@ -41,7 +41,7 @@ footer {
 """
 
 
-with gr.Blocks(css=CSS, theme=gr.themes.Base()) as app:
+with gr.Blocks() as app:
     gr.Markdown("### >_ OpenCode · big-pickle")
 
     gr.ChatInterface(
@@ -64,7 +64,9 @@ with gr.Blocks(css=CSS, theme=gr.themes.Base()) as app:
 
 app.launch(
     inline=True,
-    share=False,
+    share=True,
     quiet=True,
     show_error=True,
+    theme=gr.themes.Base(),
+    css=CSS,
 )
