@@ -1,40 +1,15 @@
 import subprocess
+import os
+import codecs
+import selectors
 import threading
 import time
 import html
 import markdown
-from pathlib import Path
 import ipywidgets as widgets
 from IPython.display import display, HTML
 
 MODEL = "opencode/big-pickle"
-AGENT_NAME = "datlog"
-
-# Agent riêng để giảm tool-loop không cần thiết và giữ câu trả lời trực tiếp.
-AGENT_DIR = Path(".opencode/agents")
-AGENT_DIR.mkdir(parents=True, exist_ok=True)
-
-AGENT_FILE = AGENT_DIR / f"{AGENT_NAME}.md"
-AGENT_FILE.write_text(
-    """---
-description: Trợ lý dev nhanh, trực tiếp cho Kaggle/OpenCode
-mode: primary
-steps: 6
----
-
-Trả lời bằng ngôn ngữ của người dùng.
-
-Ưu tiên tốc độ và câu trả lời trực tiếp.
-- Với câu hỏi đơn giản, kiến thức chung, giải thích khái niệm hoặc hội thoại: trả lời ngay, không dùng tool.
-- Không tự quét codebase, chạy shell, gọi web hay tạo subagent nếu chưa cần.
-- Chỉ dùng read/glob/grep khi câu hỏi thực sự cần đọc file hoặc code.
-- Chỉ dùng shell khi cần chạy, kiểm tra hoặc sửa chương trình.
-- Chỉ dùng web khi người dùng yêu cầu thông tin mới hoặc câu trả lời phụ thuộc dữ liệu hiện tại.
-- Khi được yêu cầu sửa code, thực hiện thay đổi cần thiết rồi tóm tắt ngắn gọn.
-- Không lặp lại đề bài, không giải thích dài nếu người dùng không yêu cầu.
-""",
-    encoding="utf-8"
-)
 
 lich_su_html = ""
 dang_xu_ly = False
@@ -170,6 +145,17 @@ display(HTML("""
     line-height: 22px;
 }
 
+
+.oc-stream {
+    margin: 18px 14px 8px 14px;
+    color: #d7d7d7;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .oc-answer {
     margin: 18px 14px 8px 14px;
@@ -417,33 +403,41 @@ def chay_agent(yeu_cau):
     ).start()
 
     try:
+        # Giữ nguyên hành vi mặc định của OpenCode:
+        # không custom agent, không thêm system prompt.
         process_hien_tai = subprocess.Popen(
             [
                 "opencode",
                 "run",
-                "--agent",
-                AGENT_NAME,
                 "-m",
                 MODEL,
                 yeu_cau
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1
+            bufsize=0
         )
 
-        # Đọc output ngay khi OpenCode ghi ra stdout.
-        # Render theo nhịp để tránh cập nhật HTML quá dày.
-        for dong in iter(process_hien_tai.stdout.readline, ""):
+        decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        selector = selectors.DefaultSelector()
+        selector.register(process_hien_tai.stdout, selectors.EVENT_READ)
+
+        while True:
             if ngat_event.is_set():
                 return
 
-            tra_loi += dong
+            events = selector.select(timeout=0.05)
+
+            for key, _ in events:
+                chunk = os.read(key.fileobj.fileno(), 512)
+
+                if chunk:
+                    tra_loi += decoder.decode(chunk)
 
             hien_tai = time.time()
 
-            if hien_tai - lan_render_cuoi >= 0.12:
+            # Stream dưới dạng plain text để tránh Markdown reflow/jitter.
+            if tra_loi and hien_tai - lan_render_cuoi >= 0.05:
                 tam = tra_loi.strip()
 
                 lines = tam.splitlines()
@@ -455,15 +449,26 @@ def chay_agent(yeu_cau):
                     noi_dung.value = f"""
                     <div class="oc-log">
                         {lich_su_html}
-                        <div class="oc-answer">
-                            {markdown_sang_html(tam)}
-                        </div>
+                        <div class="oc-stream">{html.escape(tam)}</div>
                     </div>
                     """
 
                 lan_render_cuoi = hien_tai
 
-        process_hien_tai.wait()
+            if process_hien_tai.poll() is not None:
+                # Đọc nốt phần còn lại trong pipe.
+                while True:
+                    chunk = os.read(process_hien_tai.stdout.fileno(), 512)
+
+                    if not chunk:
+                        break
+
+                    tra_loi += decoder.decode(chunk)
+
+                tra_loi += decoder.decode(b"", final=True)
+                break
+
+        selector.close()
 
         if ngat_event.is_set():
             return
@@ -478,6 +483,7 @@ def chay_agent(yeu_cau):
         if lines and lines[0].startswith("> build"):
             tra_loi = "\n".join(lines[1:]).strip()
 
+        # Chỉ render Markdown hoàn chỉnh một lần khi stream kết thúc.
         tra_loi_html = markdown_sang_html(tra_loi)
         thoi_gian = time.time() - bat_dau
 
