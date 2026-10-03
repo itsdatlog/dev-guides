@@ -2,7 +2,6 @@ import subprocess
 import threading
 import time
 import html
-import warnings
 import markdown
 import ipywidgets as widgets
 from IPython.display import display, HTML
@@ -22,7 +21,7 @@ trang_thai = widgets.HTML(value="")
 o_nhap = widgets.Text(
     value="",
     placeholder="Nhập yêu cầu...  Enter để gửi",
-    continuous_update=True,
+    continuous_update=False,
     layout=widgets.Layout(
         width="100%",
         height="56px"
@@ -475,11 +474,25 @@ def gui():
 
 # ===== ENTER =====
 
-# Dùng submit event native của ipywidgets.Text.
-# Text là input một dòng nên Enter không thể tạo newline.
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    o_nhap.on_submit(gui)
+def khi_commit_input(change):
+    # Với widgets.Text + continuous_update=False,
+    # value chỉ được commit khi Enter hoặc khi input mất focus.
+    # Nếu có nội dung mới thì gửi ngay.
+    if change.get("name") != "value":
+        return
+
+    gia_tri = (change.get("new") or "").strip()
+
+    if not gia_tri:
+        return
+
+    gui()
+
+
+o_nhap.observe(
+    khi_commit_input,
+    names="value"
+)
 
 
 # ===== HEADER =====
