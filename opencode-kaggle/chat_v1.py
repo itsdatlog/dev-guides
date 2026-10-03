@@ -145,7 +145,7 @@ display(HTML("""
 
 .oc-answer {
     margin: 18px 14px 8px 14px;
-    color: #d7d7d7;
+    color: #c9ced3;
     font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 14px;
     line-height: 1.7;
@@ -163,14 +163,14 @@ display(HTML("""
     content: "·";
     position: absolute;
     left: 0;
-    color: #6f8fa8;
+    color: #7fa6c9;
 }
 
 .oc-answer h1,
 .oc-answer h2,
 .oc-answer h3,
 .oc-answer h4 {
-    color: #9fc5e8;
+    color: #b8d8f2;
     font-weight: 500;
     line-height: 1.4;
     margin: 22px 0 9px 0;
@@ -182,7 +182,7 @@ display(HTML("""
 .oc-answer h3 { font-size: 15px; }
 .oc-answer h4 {
     font-size: 14px;
-    color: #a9bdd0;
+    color: #9eb8cc;
 }
 
 .oc-answer ul,
@@ -201,8 +201,8 @@ display(HTML("""
 }
 
 .oc-answer code {
-    background: #2a2725;
-    color: #e0aa79;
+    background: #25211f;
+    color: #e6a56f;
     padding: 2px 5px;
     border-radius: 4px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -227,12 +227,12 @@ display(HTML("""
 }
 
 .oc-answer a {
-    color: #76a9dc;
+    color: #8bbce8;
     text-decoration: none;
 }
 
 .oc-answer a:hover {
-    color: #9cc7ee;
+    color: #b8d8f2;
     text-decoration: underline;
 }
 
@@ -240,7 +240,7 @@ display(HTML("""
     margin: 12px 0;
     padding: 6px 0 6px 12px;
     border-left: 3px solid #8a7fa8;
-    color: #b7afc8;
+    color: #b8b0c9;
 }
 
 .oc-answer table {
@@ -253,31 +253,31 @@ display(HTML("""
 .oc-answer th {
     padding: 8px 10px;
     background: #242b31;
-    color: #a9c4da;
+    color: #b7d1e5;
     border-bottom: 1px solid #46525c;
     font-weight: 500;
 }
 
 .oc-answer td {
     padding: 8px 10px;
-    color: #d2d2d2;
+    color: #c7ccd1;
     border-bottom: 1px solid #333;
 }
 
 .oc-answer strong,
 .oc-answer b {
-    color: #dfc48f;
+    color: #e4c47f;
     font-weight: 500;
 }
 
 .oc-answer em,
 .oc-answer i {
-    color: #b9a9d0;
+    color: #b7a9c9;
 }
 
 .oc-done {
     margin: 4px 14px 22px 14px;
-    color: #6e7d86;
+    color: #72818b;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 12px;
 }
@@ -293,16 +293,16 @@ display(HTML("""
 .oc-spinner {
     width: 19px;
     display: inline-block;
-    color: #d5b77a;
+    color: #e0bd75;
 }
 
 .oc-state {
-    color: #c7b37e;
+    color: #d0bd86;
 }
 
 .oc-time {
     margin-left: 8px;
-    color: #69757c;
+    color: #6f7c85;
 }
 
 </style>
